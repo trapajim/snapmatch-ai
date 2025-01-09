@@ -8,3 +8,5 @@ services:
       - "2345:2345"
     volumes:
       - ./:/app
+    env_file:
+      - .env
