@@ -1,3 +1,5 @@
 .idea
 .DS_STORE
 tmp/
+.env
+credentials.json
