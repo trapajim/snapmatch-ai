@@ -5,6 +5,7 @@ import (
 	"context"
 	"github.com/trapajim/snapmatch-ai/server"
 	"github.com/trapajim/snapmatch-ai/snapmatchai"
+	"github.com/trapajim/snapmatch-ai/uploader"
 	"log"
 	"log/slog"
 	"os"
@@ -23,11 +24,16 @@ func main() {
 }
 
 func createContext(ctx context.Context) *snapmatchai.Context {
-	client, err := storage.NewClient(ctx)
+	config := snapmatchai.NewConfig()
+	storageClient, err := storage.NewGRPCClient(ctx)
 	fatalErr(err)
+	client := uploader.NewUploader(storageClient, config.StorageBucket)
+	fatalErr(err)
+
 	return &snapmatchai.Context{
 		Logger:  slog.New(slog.NewJSONHandler(os.Stdout, nil)),
 		Storage: client,
+		Config:  config,
 	}
 }
 
