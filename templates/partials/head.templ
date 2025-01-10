@@ -1,0 +1,20 @@
+package partials
+
+templ Head(title string) {
+<head>
+  <title>{title}</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/htmx.org@2.0.4" integrity="sha384-HGfztofotfshcF7+8n44JQL2oJmowVChPTg48S+jvZoztPfvwD79OC/LTtG6dMp+" crossorigin="anonymous"></script>
+  <style>
+   .my-indicator{
+          display:none;
+      }
+      .htmx-request .my-indicator{
+          display:inline;
+      }
+      .htmx-request.my-indicator{
+          display:inline;
+      }
+   </style>
+</head>
+}

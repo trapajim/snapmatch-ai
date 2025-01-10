@@ -1,0 +1,86 @@
+package pages
+
+import "github.com/trapajim/snapmatch-ai/templates/partials"
+templ Dashboard(title string) {
+	@Page(title) {
+		<div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+			<!-- Image Upload Box -->
+			<div class="bg-white p-4 rounded-lg shadow-md relative">
+				<h2 class="text-lg font-bold mb-4">Upload Images</h2>
+                <form
+                    action="/assets"
+                    hx-swap="none"
+                    method="post"
+                    enctype="multipart/form-data"
+                    hx-post="/assets"
+                    hx-trigger="change"
+                    hx-indicator="next"
+                    class="flex flex-col items-center"
+                >
+                    <label
+ for="file" class="cursor-pointer bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded">
+                        Choose Images
+                    </label>
+                    <input id="file" name="file" type="file" accept="image/*" class="hidden" multiple/>
+                </form>
+                @partials.Indicator()
+			</div>
+			<!-- CSV Upload Box -->
+			<div class="bg-white p-4 rounded-lg shadow-md">
+				<h2 class="text-lg font-bold mb-4">Upload CSV</h2>
+				<div class="flex flex-col items-center">
+					<label for="csv-upload" class="cursor-pointer bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded">
+						Choose CSV
+					</label>
+					<input id="csv-upload" type="file" accept=".csv" class="hidden"/>
+				</div>
+			</div>
+		</div>
+		<!-- Static Boxes for Images and Rows -->
+		<div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
+		    <div class="bg-white p-4 rounded-lg shadow-md">
+        	    <h2 class="text-lg font-bold mb-4">Job Statistics</h2>
+        		<canvas id="statsChart" width="400" height="150"></canvas>
+            </div>
+              <div class="flex flex-col gap-6 items-stretch">
+                  <div class="flex-grow">
+                    @partials.StatsBox("Images Uploaded", "1200", "text-green-600")
+                  </div>
+			      <div class="flex-grow">
+			        @partials.StatsBox("Rows Processed", "1200", "text-purple-600")
+			      </div>
+			</div>
+		</div>
+		<!-- Chart.js Script -->
+		<script>
+        const ctx = document.getElementById('statsChart').getContext('2d');
+        const statsChart = new Chart(ctx, {
+          type: 'bar',
+          data: {
+            labels: ['Active Jobs', 'Failed Jobs'],
+            datasets: [{
+              label: 'Jobs',
+              data: [42, 8], // Replace with dynamic data if needed
+              backgroundColor: [
+                'rgba(54, 162, 235, 0.7)', // Active Jobs
+                'rgba(255, 99, 132, 0.7)'  // Failed Jobs
+              ],
+              borderColor: [
+                'rgba(54, 162, 235, 1)',
+                'rgba(255, 99, 132, 1)'
+              ],
+              borderWidth: 1
+            }]
+          },
+          options: {
+            responsive: true,
+            scales: {
+              y: {
+                beginAtZero: true
+              }
+            }
+          }
+        });
+      </script>
+	}
+}

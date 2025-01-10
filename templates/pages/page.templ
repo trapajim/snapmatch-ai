@@ -1,0 +1,128 @@
+package pages
+import "github.com/trapajim/snapmatch-ai/templates/partials"
+
+templ Page(title string) {
+  <html>
+    @partials.Head(title)
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <body class="bg-gray-100 font-sans">
+      <div class="min-h-screen flex flex-col">
+        <!-- Navbar -->
+       @partials.Header(title)
+       @partials.Main() {
+        {children...}
+       }
+       <section id="toast-container">
+       </section>
+       <footer class="bg-gray-800 text-white py-4 text-center">
+        <p class="text-sm">Dashboard © 2025</p>
+       </footer>
+      </div>
+    </body>
+    <script>
+        class Toast {
+            /**
+             * A class representing a Toast notification.
+             * @param level {("info"|"success"|"warning"|"danger")}
+             * @param message { string }
+             */
+            constructor(level, message) {
+                this.level = level;
+                this.message = message;
+            }
+
+            /**
+             * Makes the toast container element. A button containing the entire notification.
+             * @returns {HTMLDivElement}
+             */
+            #makeToastContainer() {
+                const toastContainer = document.createElement("div");
+                toastContainer.id = `toast-${this.level}`;
+                toastContainer.classList.add("flex", "items-center", "w-full", "max-w-xs", "p-4", "mb-4", "text-gray-500", "bg-white", "rounded-lg", "shadow", "dark:text-gray-400", "dark:bg-gray-800");
+                toastContainer.setAttribute("role", "alert");
+
+                return toastContainer;
+            }
+
+            /**
+             * Creates the content element inside the toast container.
+             * @returns {HTMLDivElement}
+             */
+            #makeToastContentElement() {
+                const messageContainer = document.createElement("div");
+                messageContainer.classList.add("ms-3", "text-sm", "font-normal");
+                messageContainer.id = "toastMessage";
+                messageContainer.textContent = this.message;
+
+                return messageContainer;
+            }
+
+            /**
+             * Creates the close button for the toast.
+             * @returns {HTMLButtonElement}
+             */
+            #makeToastCloseButton() {
+                const closeButton = document.createElement("button");
+                closeButton.type = "button";
+                closeButton.classList.add("ms-auto", "-mx-1.5", "-my-1.5", "bg-white", "text-gray-400", "hover:text-gray-900", "rounded-lg", "focus:ring-2", "focus:ring-gray-300", "p-1.5", "hover:bg-gray-100", "inline-flex", "items-center", "justify-center", "h-8", "w-8", "dark:text-gray-500", "dark:hover:text-white", "dark:bg-gray-800", "dark:hover:bg-gray-700");
+                closeButton.setAttribute("data-dismiss-target", `#toast-${this.level}`);
+                closeButton.setAttribute("aria-label", "Close");
+
+                const span = document.createElement("span");
+                span.classList.add("sr-only");
+                span.textContent = "Close";
+
+                const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+                svg.setAttribute("class", "w-3 h-3");
+                svg.setAttribute("aria-hidden", "true");
+                svg.setAttribute("fill", "none");
+                svg.setAttribute("viewBox", "0 0 14 14");
+
+                const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+                path.setAttribute("stroke", "currentColor");
+                path.setAttribute("stroke-linecap", "round");
+                path.setAttribute("stroke-linejoin", "round");
+                path.setAttribute("stroke-width", "2");
+                path.setAttribute("d", "m1 1 6 6m0 0 6 6M7 7l6-6M7 7l-6 6");
+                svg.appendChild(path);
+
+                closeButton.appendChild(span);
+                closeButton.appendChild(svg);
+
+                closeButton.addEventListener("click", () => {
+                    const toast = document.querySelector(`#toast-${this.level}`);
+                    if (toast) {
+                        toast.remove();
+                    }
+                });
+
+                return closeButton;
+            }
+
+            /**
+             * Displays the toast message.
+             * @param containerQuerySelector { string } The container to append the toast to.
+             */
+            show(containerQuerySelector = "#toast-container") {
+                const toastContainer = this.#makeToastContainer();
+                const toastContent = this.#makeToastContentElement();
+                const closeButton = this.#makeToastCloseButton();
+
+                toastContainer.appendChild(toastContent);
+                toastContainer.appendChild(closeButton);
+
+                const toastContainerElement = document.querySelector(containerQuerySelector);
+                toastContainerElement.appendChild(toastContainer);
+            }
+        }
+
+        function onMakeToast(e){
+            console.log(e);
+            const toast = new Toast(e.detail.level, e.detail.message);
+            toast.show();
+        }
+        document.body.addEventListener("makeToast", onMakeToast);
+        </script>
+  </html>
+}
