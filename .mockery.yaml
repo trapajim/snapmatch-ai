@@ -3,5 +3,5 @@ packages:
   github.com/trapajim/snapmatch-ai/snapmatchai:
     config:
       all: True
-      dir: ./snapmatchai/mocks
+      dir: ./testutil/mocks
       outpkg: mocks
