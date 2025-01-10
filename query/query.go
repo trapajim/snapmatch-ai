@@ -88,19 +88,22 @@ func (q BigQuery) readQueryResults(ctx context.Context, query *bigquery.Query, t
 		return handleApiError(err)
 	}
 
-	t := reflect.TypeOf(target)
-	if t.Kind() != reflect.Ptr || t.Elem().Kind() != reflect.Slice {
+	v := reflect.ValueOf(target)
+	if v.Kind() != reflect.Pointer || v.Elem().Kind() != reflect.Slice {
 		return fmt.Errorf("target must be a pointer to a slice")
 	}
 
+	sliceValue := v.Elem()
+	elemType := sliceValue.Type().Elem()
+
 	for {
-		elemPtr := reflect.New(t.Elem().Elem())
-		if err := it.Next(elemPtr); errors.Is(err, iterator.Done) {
+		elemPtr := reflect.New(elemType)
+		if err := it.Next(elemPtr.Interface()); errors.Is(err, iterator.Done) {
 			break
 		} else if err != nil {
 			return handleApiError(err)
 		}
-		reflect.ValueOf(target).Elem().Set(reflect.Append(reflect.ValueOf(target).Elem(), elemPtr.Elem()))
+		sliceValue.Set(reflect.Append(sliceValue, elemPtr.Elem()))
 	}
 	return nil
 }
