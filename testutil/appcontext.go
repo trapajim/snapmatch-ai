@@ -1,4 +1,4 @@
-package snapmatchai
+package testutil
 
 import (
 	"github.com/trapajim/snapmatch-ai/snapmatchai"
