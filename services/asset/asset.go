@@ -12,6 +12,7 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 )
 
@@ -42,6 +43,36 @@ func (s *Service) Upload(ctx context.Context, file io.Reader, fileName string) e
 		}
 		return snapmatchai.NewError(err, fmt.Errorf("could not upload file %s with error %w", fileName, err).Error(), 500)
 	}
+	return nil
+}
+
+type BatchUploadRequest struct {
+	File io.Reader
+	Name string
+}
+
+// BatchUpload uploads multiple files concurrently to storage
+func (s *Service) BatchUpload(ctx context.Context, files chan BatchUploadRequest) error {
+	var uploadErrs []error
+	var wg sync.WaitGroup
+	go func() {
+		for file := range files {
+			wg.Add(1)
+			go func(f BatchUploadRequest) {
+				defer wg.Done()
+				err := s.Upload(ctx, f.File, f.Name)
+				if err != nil {
+					uploadErrs = append(uploadErrs, err)
+				}
+			}(file)
+		}
+	}()
+	wg.Wait()
+	err := s.index(ctx, s.appContext)
+	if len(uploadErrs) > 0 {
+		_ = s.index(ctx, s.appContext)
+		return fmt.Errorf("batch upload failed: %v", uploadErrs)
+	}
 	err = s.index(ctx, s.appContext)
 	if errors.Is(err, tableCreatedError) {
 		return nil
@@ -49,20 +80,84 @@ func (s *Service) Upload(ctx context.Context, file io.Reader, fileName string) e
 	return err
 }
 
-func (s *Service) Search(ctx context.Context, query string, page snapmatchai.Pagination) error {
+// Search searches for files in storage
+func (s *Service) Search(ctx context.Context, query string, page snapmatchai.Pagination) ([]snapmatchai.FileRecord, snapmatchai.Pagination, error) {
 	query, prms, err := buildQuery(s.appContext, query, page)
-	log.Println(prms)
 	if err != nil {
-		return err
+		return nil, snapmatchai.Pagination{}, err
 	}
-	var res []snapmatchai.FileRecord
-	err = s.appContext.DB.Query(ctx, query, prms, &res)
+	var rows []snapmatchai.FileRecord
+	err = s.appContext.DB.Query(ctx, query, prms, &rows)
 	if err != nil {
-		return err
+		return nil, page, err
 	}
-	return nil
+	if len(rows) == 0 {
+		return rows, snapmatchai.Pagination{
+			NextToken: "",
+			Per:       page.Per,
+		}, nil
+	}
+	nextToken := ""
+	if len(rows) == 50 {
+		nextToken = rows[len(rows)-1].Updated.Format(time.RFC3339)
+	}
+
+	s.SignURLs(ctx, rows)
+	pagination := snapmatchai.NewPagination(nextToken, 50)
+
+	return rows, *pagination, nil
 }
 
+func (s *Service) List(ctx context.Context, page snapmatchai.Pagination) ([]snapmatchai.FileRecord, snapmatchai.Pagination, error) {
+	var where string
+	if page.NextToken != "" {
+		where += "WHERE updated > @updated"
+	}
+	query := fmt.Sprintf(`
+SELECT *, signed_url 
+FROM EXTERNAL_OBJECT_TRANSFORM(TABLE %s.%s, ['SIGNED_URL'])
+%s
+ORDER BY updated DESC
+LIMIT 50`, s.appContext.Config.DatasetID, s.appContext.Config.TableID, where)
+	params := make(map[string]any)
+	if page.NextToken != "" {
+		t, err := page.DecodeNextToken()
+		if err != nil {
+			return nil, page, errors.New("invalid next token")
+		}
+		params["updated"] = t
+	}
+	var rows []snapmatchai.FileRecord
+	err := s.appContext.DB.Query(ctx, query, params, &rows)
+	if err != nil {
+		return nil, page, err
+	}
+	if len(rows) == 0 {
+		return rows, snapmatchai.Pagination{
+			NextToken: "",
+			Per:       page.Per,
+		}, nil
+	}
+	nextToken := ""
+	if len(rows) == 50 {
+		nextToken = rows[len(rows)-1].Updated.Format(time.RFC3339)
+	}
+
+	pagination := snapmatchai.NewPagination(nextToken, 50)
+
+	return rows, *pagination, nil
+}
+
+func (s *Service) SignURLs(ctx context.Context, records []snapmatchai.FileRecord) {
+	for i := range records {
+		signedUrl, err := s.appContext.Storage.SignUrl(ctx, records[i].ObjName, time.Hour)
+		if err != nil {
+			s.appContext.Logger.ErrorContext(ctx, "could not sign url", slog.String("error", err.Error()))
+			continue
+		}
+		records[i].SignedURL = signedUrl
+	}
+}
 func buildQuery(appContext snapmatchai.Context, searchTerm string, page snapmatchai.Pagination) (string, map[string]any, error) {
 	table := fmt.Sprintf("%s_embeddings", appContext.Config.TableID)
 	parameters := make(map[string]any)

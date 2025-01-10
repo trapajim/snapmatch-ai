@@ -4,10 +4,12 @@ import (
 	"context"
 	"io"
 	"log/slog"
+	"time"
 )
 
 type Uploader interface {
 	Upload(ctx context.Context, file io.Reader, object string) error
+	SignUrl(ctx context.Context, object string, expiry time.Duration) (string, error)
 }
 
 type Void struct{}

@@ -10,6 +10,7 @@ type Config struct {
 	BQVertexConn      string
 	TableID           string
 	BQMultiModalModel string
+	BQTextModel       string
 }
 
 func NewConfig() *Config {
@@ -21,5 +22,6 @@ func NewConfig() *Config {
 		BQVertexConn:      os.Getenv("BQ_VERTEX_CONN"),
 		TableID:           os.Getenv("TABLE_ID"),
 		BQMultiModalModel: os.Getenv("BQ_MULTI_MODAL_MODEL"),
+		BQTextModel:       os.Getenv("BQ_TEXT_MODEL"),
 	}
 }

@@ -8,6 +8,7 @@ import (
 	"github.com/trapajim/snapmatch-ai/snapmatchai"
 	"google.golang.org/api/googleapi"
 	"io"
+	"time"
 )
 
 type Uploader struct {
@@ -34,10 +35,24 @@ func (u *Uploader) Upload(ctx context.Context, file io.Reader, object string) er
 	return nil
 }
 
+func (u *Uploader) SignUrl(ctx context.Context, object string, expiry time.Duration) (string, error) {
+	u.client.Bucket(u.bucket).Object(object)
+	opts := &storage.SignedURLOptions{
+		Scheme:  storage.SigningSchemeV4,
+		Method:  "GET",
+		Expires: time.Now().Add(expiry),
+	}
+	signedURL, err := u.client.Bucket(u.bucket).SignedURL(object, opts)
+	if err != nil {
+		return "", handleApiError(err)
+	}
+	return signedURL, nil
+}
+
 func handleApiError(err error) error {
 	var e *googleapi.Error
 	if ok := errors.As(err, &e); ok {
 		return snapmatchai.NewError(err, fmt.Sprintf("Google API error: %s, Code: %d", e.Message, e.Code), e.Code)
 	}
-	return snapmatchai.NewError(err, "error occurred, during file upload", 500)
+	return snapmatchai.NewError(err, "error occurred, during file handling", 500)
 }

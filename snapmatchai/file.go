@@ -8,6 +8,7 @@ type Metadata struct {
 }
 type FileRecord struct {
 	URI         string     `bigquery:"uri" json:"uri"`
+	SignedURL   string     `bigquery:"signed_url" json:"signedURL"`
 	ContentType string     `bigquery:"content_type" json:"contentType"`
 	Size        int        `bigquery:"size" json:"size"`
 	Updated     time.Time  `bigquery:"updated" json:"updated"`

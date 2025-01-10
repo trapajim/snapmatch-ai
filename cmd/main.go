@@ -1,9 +1,13 @@
 package main
 
 import (
+	"cloud.google.com/go/bigquery"
 	"cloud.google.com/go/storage"
 	"context"
+	"github.com/trapajim/snapmatch-ai/handler"
+	"github.com/trapajim/snapmatch-ai/query"
 	"github.com/trapajim/snapmatch-ai/server"
+	"github.com/trapajim/snapmatch-ai/services/asset"
 	"github.com/trapajim/snapmatch-ai/snapmatchai"
 	"github.com/trapajim/snapmatch-ai/uploader"
 	"log"
@@ -18,21 +22,26 @@ func main() {
 	}
 	appContext := createContext(context.Background())
 	s := server.NewServer(":"+port, appContext.Logger)
+	asserService := asset.NewService(appContext)
+	handler.RegisterIndexHandler(s)
+	handler.RegisterAssetsHandler(s, asserService)
 	if err := s.Start(); err != nil {
 		log.Fatalf("Server failed: %s", err)
 	}
 }
 
-func createContext(ctx context.Context) *snapmatchai.Context {
+func createContext(ctx context.Context) snapmatchai.Context {
 	config := snapmatchai.NewConfig()
-	storageClient, err := storage.NewGRPCClient(ctx)
+	storageClient, err := storage.NewClient(ctx)
 	fatalErr(err)
 	client := uploader.NewUploader(storageClient, config.StorageBucket)
 	fatalErr(err)
-
-	return &snapmatchai.Context{
+	bqClient, err := bigquery.NewClient(ctx, config.ProjectID)
+	fatalErr(err)
+	return snapmatchai.Context{
 		Logger:  slog.New(slog.NewJSONHandler(os.Stdout, nil)),
 		Storage: client,
+		DB:      query.NewBigQuery(bqClient),
 		Config:  config,
 	}
 }
