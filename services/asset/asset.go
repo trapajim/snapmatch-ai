@@ -4,9 +4,15 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/trapajim/snapmatch-ai/pipeline"
 	"github.com/trapajim/snapmatch-ai/snapmatchai"
 	"io"
+	"log"
 	"log/slog"
+	"net/http"
+	"strconv"
+	"strings"
+	"time"
 )
 
 type Service struct {
@@ -36,5 +42,118 @@ func (s *Service) Upload(ctx context.Context, file io.Reader, fileName string) e
 		}
 		return snapmatchai.NewError(err, fmt.Errorf("could not upload file %s with error %w", fileName, err).Error(), 500)
 	}
+	err = s.index(ctx, s.appContext)
+	if errors.Is(err, tableCreatedError) {
+		return nil
+	}
+	return err
+}
+
+func (s *Service) Search(ctx context.Context, query string, page snapmatchai.Pagination) error {
+	query, prms, err := buildQuery(s.appContext, query, page)
+	log.Println(prms)
+	if err != nil {
+		return err
+	}
+	var res []snapmatchai.FileRecord
+	err = s.appContext.DB.Query(ctx, query, prms, &res)
+	if err != nil {
+		return err
+	}
 	return nil
+}
+
+func buildQuery(appContext snapmatchai.Context, searchTerm string, page snapmatchai.Pagination) (string, map[string]any, error) {
+	table := fmt.Sprintf("%s_embeddings", appContext.Config.TableID)
+	parameters := make(map[string]any)
+	pageQuery := ""
+	if page.NextToken != "" {
+		pageQuery = fmt.Sprintf(" AND (distance > @last_distance OR (distance = @last_distance AND updated > @last_updated)) ")
+	}
+	query := fmt.Sprintf(`
+WITH search_results AS ( 
+  SELECT base.*, distance 
+  FROM VECTOR_SEARCH(
+    (
+      SELECT *
+      FROM %s.%s
+    ), 'ml_generate_embedding_result',
+    (
+      SELECT ml_generate_embedding_result, content AS query
+      FROM ML.GENERATE_EMBEDDING(
+        MODEL %s,
+        (SELECT '%s' AS content))
+    ),
+    top_k => -1, options => '{"fraction_lists_to_search": 0.01}'))
+SELECT *
+FROM search_results
+%s
+ORDER BY distance ASC, updated ASC
+LIMIT 50;
+`, appContext.Config.DatasetID, table, appContext.Config.BQMultiModalModel, searchTerm, pageQuery)
+	if page.NextToken != "" {
+		t, err := page.DecodeNextToken()
+		if err != nil {
+			return "", nil, NewPaginationError(err, "invalid next token")
+		}
+		updated, dist, err := parsePaginationToken(t)
+		if err != nil {
+			return "", nil, NewPaginationError(err, "invalid next token")
+		}
+		parameters["last_updated"] = updated
+		parameters["last_distance"] = dist
+	}
+
+	return query, parameters, nil
+}
+
+func parsePaginationToken(token string) (string, float64, error) {
+	splitString := strings.Split(token, "##")
+	if len(splitString) != 2 {
+		return "", 0, errors.New("invalid next token")
+	}
+	f, err := strconv.ParseFloat(splitString[1], 64)
+	if err != nil {
+		return "", 0, errors.New("invalid next token")
+	}
+	return splitString[0], f, nil
+}
+
+type indexPipelineState struct {
+	appContext snapmatchai.Context
+}
+
+func (s *Service) index(ctx context.Context, appCtx snapmatchai.Context) error {
+	state := indexPipelineState{appContext: appCtx}
+	p := pipeline.New(state, pipeline.WithLogger(appCtx.Logger)).Then(
+		pipeline.NamedStep[indexPipelineState]{StepName: "Exists Asset Table", ExecuteFn: func(state indexPipelineState) error {
+			return TableExists(ctx, state.appContext, state.appContext.Config.TableID)
+		}}).OnError(func(state indexPipelineState, err error) error {
+		var snapMatchErr *snapmatchai.Error
+		if errors.As(err, &snapMatchErr) {
+			log.Println(snapMatchErr.Code)
+			if snapMatchErr.Code == http.StatusNotFound {
+				return CreateAssetTable(ctx, state.appContext)
+			}
+		}
+		return err
+	}).Then(pipeline.NamedStep[indexPipelineState]{StepName: "Exists Embeddings Table", ExecuteFn: func(state indexPipelineState) error {
+		return TableExists(ctx, state.appContext, embeddingsTableName(state.appContext.Config.TableID))
+	}}).OnError(func(state indexPipelineState, err error) error {
+		var snapMatchErr *snapmatchai.Error
+		if errors.As(err, &snapMatchErr) {
+			if snapMatchErr.Code == http.StatusNotFound {
+				err2 := CreateEmbeddingTable(ctx, state.appContext)
+				if err2 == nil {
+					return tableCreatedError
+				}
+				return err2
+			}
+			return err
+		}
+		return err
+	}).Then(pipeline.NamedStep[indexPipelineState]{StepName: "Update index", ExecuteFn: func(state indexPipelineState) error {
+		return UpdateIndex(ctx, state.appContext, time.Now().Add(-time.Minute))
+	}}).Execute()
+	return p
 }

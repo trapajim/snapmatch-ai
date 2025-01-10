@@ -5,7 +5,8 @@ import (
 	"errors"
 	"github.com/stretchr/testify/assert"
 	"github.com/trapajim/snapmatch-ai/snapmatchai"
-	"github.com/trapajim/snapmatch-ai/snapmatchai/mocks"
+	"github.com/trapajim/snapmatch-ai/testutil"
+	"github.com/trapajim/snapmatch-ai/testutil/mocks"
 	"io"
 	"strings"
 	"testing"
@@ -31,7 +32,7 @@ func TestService_Upload(t *testing.T) {
 		{
 			name: "Test Upload",
 			fields: fields{
-				appContext: snapmatchai.NewContextForTest(t),
+				appContext: testutil.NewContextForTest(t),
 			},
 			mockExpectations: func(fields fields, args args) {
 				fields.appContext.Storage.(*mocks.MockUploader).EXPECT().Upload(args.ctx, args.file, args.object).Return(nil).Times(1)
@@ -46,7 +47,7 @@ func TestService_Upload(t *testing.T) {
 		{
 			name: "Test Upload - error handled",
 			fields: fields{
-				appContext: snapmatchai.NewContextForTest(t),
+				appContext: testutil.NewContextForTest(t),
 			},
 			mockExpectations: func(fields fields, args args) {
 				fields.appContext.Storage.(*mocks.MockUploader).EXPECT().Upload(args.ctx, args.file, args.object).Return(snapmatchai.NewError(errors.New("error"), "some error", 400)).Times(1)
@@ -62,7 +63,7 @@ func TestService_Upload(t *testing.T) {
 		{
 			name: "Test Upload - unexpected error handled",
 			fields: fields{
-				appContext: snapmatchai.NewContextForTest(t),
+				appContext: testutil.NewContextForTest(t),
 			},
 			mockExpectations: func(fields fields, args args) {
 				fields.appContext.Storage.(*mocks.MockUploader).EXPECT().Upload(args.ctx, args.file, args.object).Return(errors.New("unexpected error")).Times(1)
