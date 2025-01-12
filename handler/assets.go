@@ -3,6 +3,8 @@ package handler
 import (
 	"fmt"
 	"github.com/trapajim/snapmatch-ai/server"
+	"github.com/trapajim/snapmatch-ai/services/ai"
+	"github.com/trapajim/snapmatch-ai/services/ai/predictions"
 	"github.com/trapajim/snapmatch-ai/services/asset"
 	"github.com/trapajim/snapmatch-ai/snapmatchai"
 	"github.com/trapajim/snapmatch-ai/templates/models"
@@ -13,14 +15,31 @@ import (
 )
 
 type AssetsHandler struct {
-	s       *server.Server
-	service *asset.Service
+	s            *server.Server
+	service      *asset.Service
+	batchService *ai.BatchPredictionService
 }
 
-func RegisterAssetsHandler(server *server.Server, service *asset.Service) {
-	handler := &AssetsHandler{service: service}
+func RegisterAssetsHandler(server *server.Server, service *asset.Service, aiService *ai.BatchPredictionService) {
+	handler := &AssetsHandler{service: service, batchService: aiService}
 	server.RegisterRoute("GET /assets", handler.Get)
 	server.RegisterRoute("POST /assets", handler.Upload)
+	server.RegisterRoute("POST /asset/predict", handler.Predict)
+
+}
+
+func (h *AssetsHandler) Predict(w http.ResponseWriter, r *http.Request) {
+	assets, _, err := h.service.List(r.Context(), snapmatchai.Pagination{})
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	err = h.batchService.Predict(r.Context(), predictions.NewCategorizeImages(assets))
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
 }
 
 func (h *AssetsHandler) Get(w http.ResponseWriter, r *http.Request) {

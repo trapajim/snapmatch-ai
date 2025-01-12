@@ -9,6 +9,7 @@ import (
 
 type Uploader interface {
 	Upload(ctx context.Context, file io.Reader, object string) error
+	WithBucket(bucket string) Uploader
 	SignUrl(ctx context.Context, object string, expiry time.Duration) (string, error)
 }
 
@@ -21,9 +22,13 @@ type DB interface {
 	Schema(ctx context.Context, dataset, tableName string) ([]DBSchema, error)
 }
 
+type GenAIBatch interface {
+	CreateBatchPredictionJob(context.Context, BatchPredictionRequest) (BatchPredictionJobConfig, error)
+}
 type Context struct {
-	Logger  *slog.Logger
-	Storage Uploader
-	DB      DB
-	Config  *Config
+	Logger     *slog.Logger
+	Storage    Uploader
+	DB         DB
+	GenAIBatch GenAIBatch
+	Config     *Config
 }

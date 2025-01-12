@@ -12,19 +12,24 @@ import (
 )
 
 type Uploader struct {
-	client *storage.Client
-	bucket string
+	client        *storage.Client
+	defaultBucket string
 }
 
 func NewUploader(client *storage.Client, bucket string) *Uploader {
 	return &Uploader{
-		client: client,
-		bucket: bucket,
+		client:        client,
+		defaultBucket: bucket,
 	}
 }
-
+func (u *Uploader) WithBucket(bucket string) snapmatchai.Uploader {
+	return &Uploader{
+		client:        u.client,
+		defaultBucket: bucket,
+	}
+}
 func (u *Uploader) Upload(ctx context.Context, file io.Reader, object string) error {
-	wc := u.client.Bucket(u.bucket).Object(object).NewWriter(ctx)
+	wc := u.client.Bucket(u.defaultBucket).Object(object).NewWriter(ctx)
 	if _, err := io.Copy(wc, file); err != nil {
 		return handleApiError(err)
 	}
@@ -36,13 +41,13 @@ func (u *Uploader) Upload(ctx context.Context, file io.Reader, object string) er
 }
 
 func (u *Uploader) SignUrl(ctx context.Context, object string, expiry time.Duration) (string, error) {
-	u.client.Bucket(u.bucket).Object(object)
+	u.client.Bucket(u.defaultBucket).Object(object)
 	opts := &storage.SignedURLOptions{
 		Scheme:  storage.SigningSchemeV4,
 		Method:  "GET",
 		Expires: time.Now().Add(expiry),
 	}
-	signedURL, err := u.client.Bucket(u.bucket).SignedURL(object, opts)
+	signedURL, err := u.client.Bucket(u.defaultBucket).SignedURL(object, opts)
 	if err != nil {
 		return "", handleApiError(err)
 	}

@@ -1,7 +1,19 @@
 package partials
 
 templ Header(title string) {
-  <header class="bg-blue-600 text-white py-4 px-6">
-    <h1 class="text-xl font-semibold">{title}</h1>
-  </header>
+<header class="bg-gradient-to-r from-blue-500 to-blue-700 text-white py-4 px-6 shadow-lg">
+  <div class="container mx-auto flex justify-between items-center">
+    <!-- Title -->
+    <h1 class="text-2xl font-bold">{title}</h1>
+
+    <!-- Navigation -->
+    <nav>
+      <ul class="flex space-x-6 text-lg">
+        <li><a href="/" class="hover:text-blue-200 transition duration-300">Home</a></li>
+        <li><a href="/assets" class="hover:text-blue-200 transition duration-300">Assets</a></li>
+      </ul>
+    </nav>
+  </div>
+</header>
+
 }

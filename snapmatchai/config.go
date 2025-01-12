@@ -4,6 +4,7 @@ import "os"
 
 type Config struct {
 	StorageBucket     string
+	JobsStorageBucket string
 	ProjectID         string
 	Location          string
 	DatasetID         string
@@ -16,6 +17,7 @@ type Config struct {
 func NewConfig() *Config {
 	return &Config{
 		StorageBucket:     os.Getenv("STORAGE_BUCKET"),
+		JobsStorageBucket: os.Getenv("JOBS_STORAGE_BUCKET"),
 		ProjectID:         os.Getenv("PROJECT_ID"),
 		Location:          os.Getenv("LOCATION"),
 		DatasetID:         os.Getenv("DATASET_ID"),
