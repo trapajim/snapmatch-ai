@@ -35,14 +35,14 @@ func (b *BatchPredictionService) Predict(ctx context.Context, builder Prediction
 		buffer.Write(l)
 		buffer.Write([]byte("\n"))
 	}
-	jobsFileName := fmt.Sprintf("jobs-%d.json", time.Now().UTC().Unix())
-	err := b.appContext.Storage.WithBucket(b.appContext.Config.JobsStorageBucket).Upload(ctx, &buffer, jobsFileName)
+	jobName := fmt.Sprintf("jobs-%d", time.Now().UTC().Unix())
+	err := b.appContext.Storage.WithBucket(b.appContext.Config.JobsStorageBucket).Upload(ctx, &buffer, jobName+".json")
 	if err != nil {
 		return fmt.Errorf("failed to write batch job: %w", err)
 	}
-	input := fmt.Sprintf("gs://%s/%s", b.appContext.Config.JobsStorageBucket, jobsFileName)
+	input := fmt.Sprintf("gs://%s/%s", b.appContext.Config.JobsStorageBucket, jobName+".json")
 	output := fmt.Sprintf("gs://%s/result.json", b.appContext.Config.JobsStorageBucket)
-	job, err := b.createBatchPredictionJob(ctx, jobsFileName, input, output)
+	job, err := b.createBatchPredictionJob(ctx, jobName, input, output)
 	if err != nil {
 		return fmt.Errorf("failed to create batch prediction job: %w", err)
 	}

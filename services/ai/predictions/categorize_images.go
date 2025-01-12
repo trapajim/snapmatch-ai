@@ -44,7 +44,7 @@ func (c *CategorizeImages) buildBatchJobLine(product snapmatchai.FileRecord, ins
 			Contents: []ai.Content{
 				{
 					Role:  "user",
-					Parts: []ai.Parts{{Text: "name::" + product.ObjName}, {Text: instructions}, {FileData: &ai.FileData{FileUri: product.URI, MIMEType: product.ContentType}}},
+					Parts: []ai.Parts{{Text: "file::" + product.URI}, {Text: instructions}, {FileData: &ai.FileData{FileUri: product.URI, MIMEType: product.ContentType}}},
 				},
 			},
 		},
