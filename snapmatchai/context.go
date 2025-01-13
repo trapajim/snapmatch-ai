@@ -1,6 +1,7 @@
 package snapmatchai
 
 import (
+	"cloud.google.com/go/firestore"
 	"context"
 	"io"
 	"log/slog"
@@ -39,6 +40,7 @@ type GenAIBatch interface {
 type Context struct {
 	Logger     *slog.Logger
 	Storage    Uploader
+	FireStore  *firestore.Client
 	DB         DataStore
 	GenAIBatch GenAIBatch
 	Config     *Config
