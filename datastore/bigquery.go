@@ -1,4 +1,4 @@
-package query
+package datastore
 
 import (
 	"cloud.google.com/go/bigquery"

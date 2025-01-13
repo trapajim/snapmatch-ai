@@ -6,9 +6,9 @@ import (
 	"cloud.google.com/go/storage"
 	"context"
 	"fmt"
+	"github.com/trapajim/snapmatch-ai/datastore"
 	"github.com/trapajim/snapmatch-ai/genai"
 	"github.com/trapajim/snapmatch-ai/handler"
-	"github.com/trapajim/snapmatch-ai/query"
 	"github.com/trapajim/snapmatch-ai/server"
 	"github.com/trapajim/snapmatch-ai/services/ai"
 	"github.com/trapajim/snapmatch-ai/services/asset"
@@ -52,7 +52,7 @@ func createContext(ctx context.Context) snapmatchai.Context {
 	return snapmatchai.Context{
 		Logger:     slog.New(slog.NewJSONHandler(os.Stdout, nil)),
 		Storage:    client,
-		DB:         query.NewBigQuery(bqClient),
+		DB:         datastore.NewBigQuery(bqClient),
 		GenAIBatch: aiBatchClient,
 		Config:     config,
 	}
