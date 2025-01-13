@@ -24,7 +24,7 @@ func RegisterAssetsHandler(server *server.Server, service *asset.Service, aiServ
 	handler := &AssetsHandler{service: service, batchService: aiService}
 	server.RegisterRoute("GET /assets", handler.Get)
 	server.RegisterRoute("POST /assets", handler.Upload)
-	server.RegisterRoute("POST /asset/predict", handler.Predict)
+	server.RegisterRoute("POST /assets/predict", handler.Predict)
 
 }
 
@@ -40,6 +40,7 @@ func (h *AssetsHandler) Predict(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+	Info("Successfully started prediction job").SetHXTriggerHeader(w)
 }
 
 func (h *AssetsHandler) Get(w http.ResponseWriter, r *http.Request) {
