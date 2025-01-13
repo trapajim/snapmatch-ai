@@ -10,12 +10,20 @@ type BatchPrediction struct {
 	OutputPath      string
 }
 
-func NewBatchPrediction(jobName, modelName, inputPath, outputPath string, modelParameters map[string]any) BatchPrediction {
-	return BatchPrediction{
+func NewBatchPrediction(jobName, modelName, inputPath, outputPath string, modelParameters map[string]any) *BatchPrediction {
+	return &BatchPrediction{
 		JobName:         jobName,
 		ModelName:       modelName,
 		ModelParameters: modelParameters,
 		InputPath:       inputPath,
 		OutputPath:      outputPath,
 	}
+}
+
+func (b *BatchPrediction) GetID() string {
+	return b.ID
+}
+
+func (b *BatchPrediction) SetID(id string) {
+	b.ID = id
 }
