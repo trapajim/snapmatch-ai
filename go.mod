@@ -5,9 +5,9 @@ go 1.23.0
 require (
 	cloud.google.com/go/aiplatform v1.70.0
 	cloud.google.com/go/bigquery v1.65.0
+	cloud.google.com/go/firestore v1.18.0
 	cloud.google.com/go/storage v1.49.0
 	github.com/a-h/templ v0.3.819
-	github.com/google/generative-ai-go v0.19.0
 	github.com/stretchr/testify v1.9.0
 	google.golang.org/api v0.214.0
 	google.golang.org/protobuf v1.35.2
@@ -15,8 +15,7 @@ require (
 
 require (
 	cel.dev/expr v0.16.1 // indirect
-	cloud.google.com/go v0.116.0 // indirect
-	cloud.google.com/go/ai v0.8.0 // indirect
+	cloud.google.com/go v0.117.0 // indirect
 	cloud.google.com/go/auth v0.13.0 // indirect
 	cloud.google.com/go/auth/oauth2adapt v0.2.6 // indirect
 	cloud.google.com/go/compute/metadata v0.6.0 // indirect
@@ -37,7 +36,6 @@ require (
 	github.com/go-logr/logr v1.4.2 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/goccy/go-json v0.10.2 // indirect
-	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect
 	github.com/google/flatbuffers v23.5.26+incompatible // indirect
 	github.com/google/s2a-go v0.1.8 // indirect
 	github.com/google/uuid v1.6.0 // indirect
@@ -50,7 +48,6 @@ require (
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/stretchr/objx v0.5.2 // indirect
 	github.com/zeebo/xxh3 v1.0.2 // indirect
-	go.opencensus.io v0.24.0 // indirect
 	go.opentelemetry.io/contrib/detectors/gcp v1.29.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.54.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.54.0 // indirect
