@@ -17,10 +17,11 @@ type PredictionBuilder interface {
 }
 type BatchPredictionService struct {
 	appContext snapmatchai.Context
+	repo       snapmatchai.Repository[*snapmatchai.BatchPrediction]
 }
 
-func NewBatchPredictionService(appContext snapmatchai.Context) *BatchPredictionService {
-	return &BatchPredictionService{appContext: appContext}
+func NewBatchPredictionService(appContext snapmatchai.Context, repo snapmatchai.Repository[*snapmatchai.BatchPrediction]) *BatchPredictionService {
+	return &BatchPredictionService{appContext: appContext, repo: repo}
 }
 
 func (b *BatchPredictionService) Predict(ctx context.Context, builder PredictionBuilder) error {
@@ -44,7 +45,11 @@ func (b *BatchPredictionService) Predict(ctx context.Context, builder Prediction
 	output := fmt.Sprintf("gs://%s/result.json", b.appContext.Config.JobsStorageBucket)
 	job, err := b.createBatchPredictionJob(ctx, jobName, input, output)
 	if err != nil {
-		return fmt.Errorf("failed to create batch prediction job: %w", err)
+		return snapmatchai.NewError(err, "failed to create batch prediction job", 500)
+	}
+	err = b.repo.Create(ctx, &job)
+	if err != nil {
+		return snapmatchai.NewError(err, "failed to save batch prediction job", 500)
 	}
 	b.appContext.Logger.InfoContext(ctx, "Batch prediction job created", slog.String("job_id", job.ID), slog.String("job_name", job.JobName))
 	return nil
@@ -56,7 +61,7 @@ func (b *BatchPredictionService) createBatchPredictionJob(ctx context.Context, n
 		"temperature": 0.2,
 	}
 	request := snapmatchai.NewBatchPrediction(name, modelName, inputPath, outputPath, modelParameters)
-	job, err := b.appContext.GenAIBatch.CreateBatchPredictionJob(ctx, request)
+	job, err := b.appContext.GenAIBatch.CreateBatchPredictionJob(ctx, *request)
 	if err != nil {
 		errAs := &snapmatchai.Error{}
 		if errors.As(err, &errAs) {
