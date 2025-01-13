@@ -23,6 +23,22 @@ func NewBatchClient(client *aiplatform.JobClient, location, projectID string) *B
 	}
 }
 
+func (b *BatchClient) GetBatchPredictionJob(ctx context.Context, name string) (snapmatchai.BatchPrediction, error) {
+	r, err := b.client.GetBatchPredictionJob(ctx, &aiplatformpb.GetBatchPredictionJobRequest{
+		Name: name,
+	})
+	if err != nil {
+		return snapmatchai.BatchPrediction{}, snapmatchai.NewError(err, "failed to get batch prediction job", 400)
+	}
+	return snapmatchai.BatchPrediction{
+		JobName:    r.GetName(),
+		ModelName:  r.GetModel(),
+		InputPath:  r.GetInputConfig().GetGcsSource().GetUris()[0],
+		OutputPath: r.GetOutputInfo().GetGcsOutputDirectory(),
+		Status:     r.GetState().String(),
+	}, nil
+}
+
 func (b *BatchClient) CreateBatchPredictionJob(ctx context.Context, config snapmatchai.BatchPrediction) (snapmatchai.BatchPrediction, error) {
 	modelParameters, err := structpb.NewValue(config.ModelParameters)
 	if err != nil {
@@ -57,6 +73,7 @@ func (b *BatchClient) CreateBatchPredictionJob(ctx context.Context, config snapm
 	if err != nil {
 		return snapmatchai.BatchPrediction{}, snapmatchai.NewError(err, "failed to create batch prediction job", 400)
 	}
+	config.InternalName = r.GetName()
 	config.Status = r.GetState().String()
 	return config, nil
 }

@@ -11,6 +11,8 @@ import (
 type Uploader interface {
 	Upload(ctx context.Context, file io.Reader, object string) error
 	WithBucket(bucket string) Uploader
+	GetFile(ctx context.Context, object string) (io.ReadCloser, error)
+	UpdateMetadata(ctx context.Context, object string, metadata map[string]string) error
 	SignUrl(ctx context.Context, object string, expiry time.Duration) (string, error)
 }
 
@@ -36,6 +38,7 @@ type Repository[T Entity] interface {
 
 type GenAIBatch interface {
 	CreateBatchPredictionJob(context.Context, BatchPrediction) (BatchPrediction, error)
+	GetBatchPredictionJob(context.Context, string) (BatchPrediction, error)
 }
 type Context struct {
 	Logger     *slog.Logger

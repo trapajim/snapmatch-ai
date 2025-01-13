@@ -10,11 +10,13 @@ import (
 	"github.com/trapajim/snapmatch-ai/datastore"
 	"github.com/trapajim/snapmatch-ai/genai"
 	"github.com/trapajim/snapmatch-ai/handler"
+	"github.com/trapajim/snapmatch-ai/jobworker"
 	"github.com/trapajim/snapmatch-ai/server"
 	"github.com/trapajim/snapmatch-ai/services/ai"
 	"github.com/trapajim/snapmatch-ai/services/asset"
 	"github.com/trapajim/snapmatch-ai/snapmatchai"
 	"github.com/trapajim/snapmatch-ai/uploader"
+	"time"
 
 	"google.golang.org/api/option"
 	"log"
@@ -31,7 +33,9 @@ func main() {
 	s := server.NewServer(":"+port, appContext.Logger)
 	asserService := asset.NewService(appContext)
 	batchPredictionRepository := datastore.NewFirestoreRepository[*snapmatchai.BatchPrediction](appContext.FireStore, "batch_predictions")
-	batchPredictionService := ai.NewBatchPredictionService(appContext, batchPredictionRepository)
+	worker := jobworker.NewJobWorker(20*time.Second, batchPredictionRepository, appContext.Logger, appContext.GenAIBatch, appContext.Storage, appContext.Config.JobsStorageBucket)
+	worker.Start(context.Background())
+	batchPredictionService := ai.NewBatchPredictionService(appContext, batchPredictionRepository, worker)
 	handler.RegisterIndexHandler(s)
 	handler.RegisterAssetsHandler(s, asserService, batchPredictionService)
 	if err := s.Start(); err != nil {

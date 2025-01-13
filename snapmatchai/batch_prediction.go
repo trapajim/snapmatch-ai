@@ -3,6 +3,7 @@ package snapmatchai
 type BatchPrediction struct {
 	ID              string
 	Status          string
+	InternalName    string
 	JobName         string
 	ModelName       string
 	ModelParameters map[string]any

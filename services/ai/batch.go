@@ -6,7 +6,9 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/trapajim/snapmatch-ai/jobworker"
 	"github.com/trapajim/snapmatch-ai/snapmatchai"
+	"log"
 	"log/slog"
 	"time"
 )
@@ -18,10 +20,11 @@ type PredictionBuilder interface {
 type BatchPredictionService struct {
 	appContext snapmatchai.Context
 	repo       snapmatchai.Repository[*snapmatchai.BatchPrediction]
+	worker     *jobworker.JobWorker
 }
 
-func NewBatchPredictionService(appContext snapmatchai.Context, repo snapmatchai.Repository[*snapmatchai.BatchPrediction]) *BatchPredictionService {
-	return &BatchPredictionService{appContext: appContext, repo: repo}
+func NewBatchPredictionService(appContext snapmatchai.Context, repo snapmatchai.Repository[*snapmatchai.BatchPrediction], worker *jobworker.JobWorker) *BatchPredictionService {
+	return &BatchPredictionService{appContext: appContext, repo: repo, worker: worker}
 }
 
 func (b *BatchPredictionService) Predict(ctx context.Context, builder PredictionBuilder) error {
@@ -47,10 +50,19 @@ func (b *BatchPredictionService) Predict(ctx context.Context, builder Prediction
 	if err != nil {
 		return snapmatchai.NewError(err, "failed to create batch prediction job", 500)
 	}
+	/*job := snapmatchai.BatchPrediction{
+		JobName:    jobName,
+		ModelName:  "gemini-1.5-flash-002",
+		InputPath:  input,
+		OutputPath: output,
+		Status:     "PENDING",
+	}*/
 	err = b.repo.Create(ctx, &job)
 	if err != nil {
+		log.Println("failed to save batch prediction job", err)
 		return snapmatchai.NewError(err, "failed to save batch prediction job", 500)
 	}
+	b.worker.AddJob(&job)
 	b.appContext.Logger.InfoContext(ctx, "Batch prediction job created", slog.String("job_id", job.ID), slog.String("job_name", job.JobName))
 	return nil
 }

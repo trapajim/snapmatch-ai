@@ -54,6 +54,24 @@ func (u *Uploader) SignUrl(ctx context.Context, object string, expiry time.Durat
 	return signedURL, nil
 }
 
+func (u *Uploader) GetFile(ctx context.Context, object string) (io.ReadCloser, error) {
+	rc, err := u.client.Bucket(u.defaultBucket).Object(object).NewReader(ctx)
+	if err != nil {
+		return nil, handleApiError(err)
+	}
+	return rc, nil
+}
+
+func (u *Uploader) UpdateMetadata(ctx context.Context, object string, metadata map[string]string) error {
+	_, err := u.client.Bucket(u.defaultBucket).Object(object).Update(ctx, storage.ObjectAttrsToUpdate{
+		Metadata: metadata,
+	})
+	if err != nil {
+		return handleApiError(err)
+	}
+	return nil
+}
+
 func handleApiError(err error) error {
 	var e *googleapi.Error
 	if ok := errors.As(err, &e); ok {
