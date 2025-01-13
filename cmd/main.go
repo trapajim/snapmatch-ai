@@ -14,6 +14,7 @@ import (
 	"github.com/trapajim/snapmatch-ai/server"
 	"github.com/trapajim/snapmatch-ai/services/ai"
 	"github.com/trapajim/snapmatch-ai/services/asset"
+	"github.com/trapajim/snapmatch-ai/services/job"
 	"github.com/trapajim/snapmatch-ai/snapmatchai"
 	"github.com/trapajim/snapmatch-ai/uploader"
 	"time"
@@ -36,7 +37,8 @@ func main() {
 	worker := jobworker.NewJobWorker(20*time.Second, batchPredictionRepository, appContext.Logger, appContext.GenAIBatch, appContext.Storage, appContext.Config.JobsStorageBucket)
 	worker.Start(context.Background())
 	batchPredictionService := ai.NewBatchPredictionService(appContext, batchPredictionRepository, worker)
-	handler.RegisterIndexHandler(s)
+	jobService := job.NewService(appContext, batchPredictionRepository)
+	handler.RegisterIndexHandler(s, jobService)
 	handler.RegisterAssetsHandler(s, asserService, batchPredictionService)
 	if err := s.Start(); err != nil {
 		log.Fatalf("Server failed: %s", err)
