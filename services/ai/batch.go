@@ -46,16 +46,16 @@ func (b *BatchPredictionService) Predict(ctx context.Context, builder Prediction
 	if err != nil {
 		return fmt.Errorf("failed to create batch prediction job: %w", err)
 	}
-	b.appContext.Logger.InfoContext(ctx, "Batch prediction job created", slog.String("job_id", job.Name))
+	b.appContext.Logger.InfoContext(ctx, "Batch prediction job created", slog.String("job_id", job.ID), slog.String("job_name", job.JobName))
 	return nil
 }
 
-func (b *BatchPredictionService) createBatchPredictionJob(ctx context.Context, name, inputPath, outputPath string) (snapmatchai.BatchPredictionJobConfig, error) {
+func (b *BatchPredictionService) createBatchPredictionJob(ctx context.Context, name, inputPath, outputPath string) (snapmatchai.BatchPrediction, error) {
 	modelName := "gemini-1.5-flash-002"
 	modelParameters := map[string]any{
 		"temperature": 0.2,
 	}
-	request := snapmatchai.NewBatchPredictionRequest(name, modelName, inputPath, outputPath, modelParameters)
+	request := snapmatchai.NewBatchPrediction(name, modelName, inputPath, outputPath, modelParameters)
 	job, err := b.appContext.GenAIBatch.CreateBatchPredictionJob(ctx, request)
 	if err != nil {
 		errAs := &snapmatchai.Error{}
@@ -69,7 +69,7 @@ func (b *BatchPredictionService) createBatchPredictionJob(ctx context.Context, n
 		} else {
 			b.appContext.Logger.ErrorContext(ctx, "unable to create batch prediction job", slog.String("error", err.Error()))
 		}
-		return snapmatchai.BatchPredictionJobConfig{}, err
+		return snapmatchai.BatchPrediction{}, err
 	}
 	return job, nil
 }

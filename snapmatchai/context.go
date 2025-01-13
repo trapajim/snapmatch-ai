@@ -34,7 +34,7 @@ type Repository[T Entity] interface {
 }
 
 type GenAIBatch interface {
-	CreateBatchPredictionJob(context.Context, BatchPredictionRequest) (BatchPredictionJobConfig, error)
+	CreateBatchPredictionJob(context.Context, BatchPrediction) (BatchPrediction, error)
 }
 type Context struct {
 	Logger     *slog.Logger

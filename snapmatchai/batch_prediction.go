@@ -1,6 +1,8 @@
 package snapmatchai
 
-type BatchPredictionRequest struct {
+type BatchPrediction struct {
+	ID              string
+	Status          string
 	JobName         string
 	ModelName       string
 	ModelParameters map[string]any
@@ -8,13 +10,8 @@ type BatchPredictionRequest struct {
 	OutputPath      string
 }
 
-type BatchPredictionJobConfig struct {
-	Name   string
-	Status string
-}
-
-func NewBatchPredictionRequest(jobName, modelName, inputPath, outputPath string, modelParameters map[string]any) BatchPredictionRequest {
-	return BatchPredictionRequest{
+func NewBatchPrediction(jobName, modelName, inputPath, outputPath string, modelParameters map[string]any) BatchPrediction {
+	return BatchPrediction{
 		JobName:         jobName,
 		ModelName:       modelName,
 		ModelParameters: modelParameters,

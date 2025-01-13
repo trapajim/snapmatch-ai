@@ -23,10 +23,10 @@ func NewBatchClient(client *aiplatform.JobClient, location, projectID string) *B
 	}
 }
 
-func (b *BatchClient) CreateBatchPredictionJob(ctx context.Context, config snapmatchai.BatchPredictionRequest) (snapmatchai.BatchPredictionJobConfig, error) {
+func (b *BatchClient) CreateBatchPredictionJob(ctx context.Context, config snapmatchai.BatchPrediction) (snapmatchai.BatchPrediction, error) {
 	modelParameters, err := structpb.NewValue(config.ModelParameters)
 	if err != nil {
-		return snapmatchai.BatchPredictionJobConfig{}, snapmatchai.NewError(err, "failed to create model", 400)
+		return snapmatchai.BatchPrediction{}, snapmatchai.NewError(err, "failed to create model", 400)
 	}
 	req := &aiplatformpb.CreateBatchPredictionJobRequest{
 		Parent: fmt.Sprintf("projects/%s/locations/%s", b.projectID, b.location),
@@ -55,10 +55,8 @@ func (b *BatchClient) CreateBatchPredictionJob(ctx context.Context, config snapm
 
 	r, err := b.client.CreateBatchPredictionJob(ctx, req)
 	if err != nil {
-		return snapmatchai.BatchPredictionJobConfig{}, snapmatchai.NewError(err, "failed to create batch prediction job", 400)
+		return snapmatchai.BatchPrediction{}, snapmatchai.NewError(err, "failed to create batch prediction job", 400)
 	}
-	return snapmatchai.BatchPredictionJobConfig{
-		Name:   r.GetName(),
-		Status: r.GetState().String(),
-	}, nil
+	config.Status = r.GetState().String()
+	return config, nil
 }
