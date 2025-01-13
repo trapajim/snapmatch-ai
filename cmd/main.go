@@ -3,6 +3,7 @@ package main
 import (
 	aiplatform "cloud.google.com/go/aiplatform/apiv1"
 	"cloud.google.com/go/bigquery"
+	"cloud.google.com/go/firestore"
 	"cloud.google.com/go/storage"
 	"context"
 	"fmt"
@@ -29,7 +30,8 @@ func main() {
 	appContext := createContext(context.Background())
 	s := server.NewServer(":"+port, appContext.Logger)
 	asserService := asset.NewService(appContext)
-	batchPredictionService := ai.NewBatchPredictionService(appContext)
+	batchPredictionRepository := datastore.NewFirestoreRepository[*snapmatchai.BatchPrediction](appContext.FireStore, "batch_predictions")
+	batchPredictionService := ai.NewBatchPredictionService(appContext, batchPredictionRepository)
 	handler.RegisterIndexHandler(s)
 	handler.RegisterAssetsHandler(s, asserService, batchPredictionService)
 	if err := s.Start(); err != nil {
@@ -49,9 +51,12 @@ func createContext(ctx context.Context) snapmatchai.Context {
 	aiClient, err := aiplatform.NewJobClient(context.Background(), option.WithEndpoint(apiEndpoint))
 	fatalErr(err)
 	aiBatchClient := genai.NewBatchClient(aiClient, config.Location, config.ProjectID)
+	firestoreClient, err := firestore.NewClient(ctx, config.ProjectID)
+	fatalErr(err)
 	return snapmatchai.Context{
 		Logger:     slog.New(slog.NewJSONHandler(os.Stdout, nil)),
 		Storage:    client,
+		FireStore:  firestoreClient,
 		DB:         datastore.NewBigQuery(bqClient),
 		GenAIBatch: aiBatchClient,
 		Config:     config,
