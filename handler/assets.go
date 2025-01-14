@@ -28,14 +28,26 @@ func RegisterAssetsHandler(server *server.Server, service *asset.Service, aiServ
 
 }
 
+type PredictRequest struct {
+	Categories string `json:"categories"`
+}
+
 func (h *AssetsHandler) Predict(w http.ResponseWriter, r *http.Request) {
 	assets, _, err := h.service.List(r.Context(), snapmatchai.Pagination{})
+	if err := r.ParseForm(); err != nil {
+		http.Error(w, "Failed to parse form data", http.StatusBadRequest)
+		return
+	}
+
+	req := PredictRequest{
+		Categories: r.FormValue("categories"),
+	}
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	err = h.batchService.Predict(r.Context(), predictions.NewCategorizeImages(assets))
+	err = h.batchService.Predict(r.Context(), predictions.NewCategorizeImages(assets, req.Categories))
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -60,11 +72,12 @@ func (h *AssetsHandler) Get(w http.ResponseWriter, r *http.Request) {
 	viewModel := make(models.Assets, len(assets))
 	for i, a := range assets {
 		viewModel[i] = models.Asset{
-			Name: a.ObjName,
-			Size: a.Size,
-			Type: a.ContentType,
-			Date: a.Updated,
-			URI:  a.SignedURL,
+			Name:     a.ObjName,
+			Size:     a.Size,
+			Type:     a.ContentType,
+			Date:     a.Updated,
+			Category: a.Category,
+			URI:      a.SignedURL,
 		}
 	}
 	if r.Header.Get("HX-Request") == "true" {

@@ -7,10 +7,15 @@ import (
 )
 
 templ Assets(assets models.Assets) {
+    {{ category := ""}}
 	<div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
 		for _, asset := range assets {
+		        if category != asset.Category {
+		            <h2 class="col-span-full text-xl font-semibold text-gray-800">{ asset.Category }</h2>
+		            {{category = asset.Category}}
+                }
 			<div class="bg-white border border-gray-200 rounded-lg shadow hover:shadow-lg transition-shadow duration-300">
-				<img src={ asset.URI } alt={ asset.Name } class="w-full h-48 object-cover rounded-t-lg"/>
+				<img loading="lazy" src={ asset.URI } alt={ asset.Name } class="w-full h-48 object-cover rounded-t-lg"/>
 				<div class="p-4">
 					<h2 class="text-lg font-semibold text-gray-800 truncate">{ asset.Name }</h2>
 					<p class="text-sm text-gray-600">{ strconv.Itoa(asset.Size) } bytes</p>

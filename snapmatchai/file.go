@@ -13,6 +13,7 @@ type FileRecord struct {
 	Size        int        `bigquery:"size" json:"size"`
 	Updated     time.Time  `bigquery:"updated" json:"updated"`
 	Metadata    []Metadata `bigquery:"metadata" json:"metadata"`
+	Category    string     `bigquery:"category" json:"category"`
 	ObjPath     string     `bigquery:"obj_path" json:"objPath"`
 	ObjName     string     `bigquery:"obj_name" json:"objName"`
 	FileID      string     `bigquery:"file_id" json:"fileID"`

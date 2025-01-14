@@ -3,14 +3,16 @@ package predictions
 import (
 	"github.com/trapajim/snapmatch-ai/services/ai"
 	"github.com/trapajim/snapmatch-ai/snapmatchai"
+	"log"
 )
 
 type CategorizeImages struct {
-	imgs []snapmatchai.FileRecord
+	imgs       []snapmatchai.FileRecord
+	categories string
 }
 
-func NewCategorizeImages(imgs []snapmatchai.FileRecord) *CategorizeImages {
-	return &CategorizeImages{imgs: imgs}
+func NewCategorizeImages(imgs []snapmatchai.FileRecord, categories string) *CategorizeImages {
+	return &CategorizeImages{imgs: imgs, categories: categories}
 }
 
 func (c *CategorizeImages) Name() string {
@@ -31,6 +33,10 @@ func (c *CategorizeImages) BuildPrediction() []ai.PredictionRequest {
 	\n
 		Return only the primary category name as a single word e.g. food 
  `
+	if len(c.categories) > 0 {
+		instructions += `\n These are the categories you can choose from: ` + c.categories
+	}
+	log.Println("Instructions: ", instructions)
 	for i, img := range c.imgs {
 		line := c.buildBatchJobLine(img, instructions)
 		req[i] = line
