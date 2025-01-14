@@ -21,6 +21,9 @@ type JobStats struct {
 	Success int
 }
 
+func (j *Job) List(ctx context.Context) ([]*snapmatchai.BatchPrediction, error) {
+	return j.jobRepo.List(ctx, nil)
+}
 func (j *Job) Stats(ctx context.Context) (JobStats, error) {
 	jobs, err := j.jobRepo.List(ctx, nil)
 	if err != nil {

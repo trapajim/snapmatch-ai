@@ -40,6 +40,7 @@ func main() {
 	jobService := job.NewService(appContext, batchPredictionRepository)
 	handler.RegisterIndexHandler(s, jobService)
 	handler.RegisterAssetsHandler(s, asserService, batchPredictionService)
+	handler.RegisterJobsHandler(s, jobService)
 	if err := s.Start(); err != nil {
 		log.Fatalf("Server failed: %s", err)
 	}
