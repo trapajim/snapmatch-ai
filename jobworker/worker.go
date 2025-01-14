@@ -13,11 +13,15 @@ import (
 	"time"
 )
 
+type ResultHandler interface {
+	HandleResult(ctx context.Context, record JSONLRecord) error
+}
 type JobWorker struct {
 	jobChan       chan *snapmatchai.BatchPrediction
 	jobRepo       snapmatchai.Repository[*snapmatchai.BatchPrediction]
 	jobBucket     string
 	uploader      snapmatchai.Uploader
+	handlers      map[string]ResultHandler
 	stopChan      chan struct{}
 	wg            *sync.WaitGroup
 	genAi         snapmatchai.GenAIBatch
@@ -30,6 +34,7 @@ func NewJobWorker(checkInterval time.Duration, repo snapmatchai.Repository[*snap
 		jobChan:       make(chan *snapmatchai.BatchPrediction),
 		stopChan:      make(chan struct{}),
 		jobBucket:     jobBucket,
+		handlers:      make(map[string]ResultHandler),
 		uploader:      uploader,
 		genAi:         genai,
 		jobRepo:       repo,
@@ -37,6 +42,10 @@ func NewJobWorker(checkInterval time.Duration, repo snapmatchai.Repository[*snap
 		wg:            &sync.WaitGroup{},
 		checkInterval: checkInterval,
 	}
+}
+
+func (w *JobWorker) RegisterHandler(jobType string, handler ResultHandler) {
+	w.handlers[jobType] = handler
 }
 
 // Start begins the worker to monitor jobs.
@@ -111,6 +120,10 @@ func (w *JobWorker) ReadResults(ctx context.Context, job *snapmatchai.BatchPredi
 		return fmt.Errorf("failed to get file: %w", err)
 	}
 	scanner := bufio.NewScanner(f)
+	handler, ok := w.handlers[job.JobType]
+	if !ok {
+		return fmt.Errorf("no handler found for job type: %s", job.JobType)
+	}
 	for scanner.Scan() {
 		line := scanner.Text()
 		var record JSONLRecord
@@ -118,21 +131,9 @@ func (w *JobWorker) ReadResults(ctx context.Context, job *snapmatchai.BatchPredi
 			w.logger.ErrorContext(ctx, fmt.Errorf("failed to parse JSON line: %w", err).Error())
 			continue
 		}
-		var assetName string
-		for _, part := range record.Request.Contents[0].Parts {
-			if part.Text != nil && strings.HasPrefix(*part.Text, "file::") {
-				assetName = strings.TrimPrefix(*part.Text, "file::")
-				assetName = strings.SplitN(strings.TrimPrefix(assetName, "gs://"), "/", 2)[1]
-				break
-			}
-		}
-		var cat string
-		if len(record.Response.Candidates) > 0 {
-			cat = record.Response.Candidates[0].Content.Parts[0].Text
-		}
-		err = w.uploader.UpdateMetadata(ctx, assetName, map[string]string{"category": strings.TrimSpace(cat)})
+		err = handler.HandleResult(ctx, record)
 		if err != nil {
-			return fmt.Errorf("failed to update metadata: %w", err)
+			return err
 		}
 	}
 

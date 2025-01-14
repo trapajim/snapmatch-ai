@@ -2,6 +2,7 @@ package snapmatchai
 
 type BatchPrediction struct {
 	ID              string
+	JobType         string
 	Status          string
 	InternalName    string
 	JobName         string

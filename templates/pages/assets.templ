@@ -94,20 +94,46 @@ templ Assets(assets models.Assets) {
 			</div>
 			</div>
 			<div class="mb-4">
-				<form hx-get="/assets" hx-target="#assets-wrapper" class="flex items-center">
-					<input
-						type="text"
-						name="query"
-						placeholder="Search assets..."
-						class="w-full px-4 py-2 border border-gray-300 rounded-l-lg focus:outline-none focus:ring focus:ring-blue-200"
-					/>
-					<button
-						type="submit"
-						class="px-4 py-2 bg-blue-500 text-white font-medium rounded-r-lg hover:bg-blue-600 transition"
-					>
-						Search
-					</button>
-				</form>
+				<form hx-get="/assets" hx-target="#assets-wrapper" class="flex items-center space-x-2">
+                	<input
+                		type="text"
+                		name="query"
+                		placeholder="Search assets..."
+                		class="w-full px-4 py-2 border border-gray-300 rounded-l-lg focus:outline-none focus:ring focus:ring-blue-200"
+                	/>
+                	<button
+                		type="submit"
+                		class="px-4 py-2 bg-blue-500 text-white font-medium rounded-r-lg hover:bg-blue-600 transition"
+                	>
+                		Search
+                	</button>
+
+                	<!-- Popover for Advanced Similarity Options -->
+                	<div class="relative">
+                		<button
+                			class="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition"
+                			data-popover-target="popover-similarity"
+                			data-popover-placement="bottom"
+                		>
+                			Advanced Options
+                		</button>
+                		<div
+                			id="popover-similarity"
+                			role="popover"
+                			class="hidden absolute z-10 w-48 p-4 bg-white border border-gray-300 rounded-lg shadow-lg"
+                		>
+                			<h3 class="text-lg font-semibold">Similarity Level</h3>
+                			<select
+                				name="similarity"
+                				class="mt-2 px-4 py-2 w-full border border-gray-300 rounded-lg focus:outline-none focus:ring focus:ring-blue-200"
+                			>
+                				<option value="high">High Similarity</option>
+                				<option value="medium" selected>Medium Similarity</option>
+                				<option value="low">Low Similarity</option>
+                			</select>
+                		</div>
+                	</div>
+                </form>
 			</div>
 			<div id="assets-wrapper">
 				@partials.Assets(assets)

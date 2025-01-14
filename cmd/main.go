@@ -11,6 +11,7 @@ import (
 	"github.com/trapajim/snapmatch-ai/genai"
 	"github.com/trapajim/snapmatch-ai/handler"
 	"github.com/trapajim/snapmatch-ai/jobworker"
+	"github.com/trapajim/snapmatch-ai/jobworker/resulthandler"
 	"github.com/trapajim/snapmatch-ai/server"
 	"github.com/trapajim/snapmatch-ai/services/ai"
 	"github.com/trapajim/snapmatch-ai/services/asset"
@@ -35,11 +36,13 @@ func main() {
 	asserService := asset.NewService(appContext)
 	batchPredictionRepository := datastore.NewFirestoreRepository[*snapmatchai.BatchPrediction](appContext.FireStore, "batch_predictions")
 	worker := jobworker.NewJobWorker(20*time.Second, batchPredictionRepository, appContext.Logger, appContext.GenAIBatch, appContext.Storage, appContext.Config.JobsStorageBucket)
+	worker.RegisterHandler("categorize_images", resulthandler.NewImageCategory(appContext.Storage))
+	worker.RegisterHandler("product_search_term", resulthandler.NewProductSearch(asserService))
 	worker.Start(context.Background())
 	batchPredictionService := ai.NewBatchPredictionService(appContext, batchPredictionRepository, worker)
 	jobService := job.NewService(appContext, batchPredictionRepository)
 	handler.RegisterIndexHandler(s, jobService)
-	handler.RegisterAssetsHandler(s, asserService, batchPredictionService)
+	handler.RegisterAssetsHandler(s, asserService, batchPredictionService, appContext.Storage)
 	handler.RegisterJobsHandler(s, jobService)
 	if err := s.Start(); err != nil {
 		log.Fatalf("Server failed: %s", err)

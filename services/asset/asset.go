@@ -169,6 +169,7 @@ func buildQuery(appContext snapmatchai.Context, searchTerm string, page snapmatc
 	if page.NextToken != "" {
 		pageQuery = fmt.Sprintf(" AND (distance > @last_distance OR (distance = @last_distance AND updated > @last_updated)) ")
 	}
+	distance := 1.02
 	query := fmt.Sprintf(`
 WITH search_results AS ( 
   SELECT base.*, distance 
@@ -183,13 +184,18 @@ WITH search_results AS (
         MODEL %s,
         (SELECT '%s' AS content))
     ),
-    top_k => -1, options => '{"fraction_lists_to_search": 0.01}'))
+    top_k => -1, options => '{"fraction_lists_to_search": 0.01}')),
+highest_distance AS (
+  SELECT MIN(distance) AS best_distance
+  FROM search_results
+)
 SELECT *
-FROM search_results
+FROM search_results, highest_distance
+WHERE distance <= best_distance * %f
 %s
 ORDER BY distance ASC, updated ASC
 LIMIT 50;
-`, appContext.Config.DatasetID, table, appContext.Config.BQMultiModalModel, searchTerm, pageQuery)
+`, appContext.Config.DatasetID, table, appContext.Config.BQMultiModalModel, searchTerm, distance, pageQuery)
 	if page.NextToken != "" {
 		t, err := page.DecodeNextToken()
 		if err != nil {
@@ -202,7 +208,6 @@ LIMIT 50;
 		parameters["last_updated"] = updated
 		parameters["last_distance"] = dist
 	}
-
 	return query, parameters, nil
 }
 

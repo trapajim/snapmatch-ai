@@ -50,13 +50,7 @@ func (b *BatchPredictionService) Predict(ctx context.Context, builder Prediction
 	if err != nil {
 		return snapmatchai.NewError(err, "failed to create batch prediction job", 500)
 	}
-	/*job := snapmatchai.BatchPrediction{
-		JobName:    jobName,
-		ModelName:  "gemini-1.5-flash-002",
-		InputPath:  input,
-		OutputPath: output,
-		Status:     "PENDING",
-	}*/
+	job.JobType = builder.Name()
 	err = b.repo.Create(ctx, &job)
 	if err != nil {
 		log.Println("failed to save batch prediction job", err)

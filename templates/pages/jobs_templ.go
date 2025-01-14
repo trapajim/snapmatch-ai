@@ -84,7 +84,7 @@ func Jobs(jobs models.Jobs) templ.Component {
 						return templ_7745c5c3_Err
 					}
 				} else if job.Status == "Pending" {
-					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 6, "<span class=\"px-2 py-1 text-xs font-semibold text-blue-700 bg-gray-100 rounded\">Pending</span>")
+					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 6, "<span class=\"px-2 py-1 text-xs font-semibold text-gray-700 bg-blue-100 rounded\">Pending</span>")
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}

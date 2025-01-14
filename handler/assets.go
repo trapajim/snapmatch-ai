@@ -17,11 +17,12 @@ import (
 type AssetsHandler struct {
 	s            *server.Server
 	service      *asset.Service
+	uploader     snapmatchai.Uploader
 	batchService *ai.BatchPredictionService
 }
 
-func RegisterAssetsHandler(server *server.Server, service *asset.Service, aiService *ai.BatchPredictionService) {
-	handler := &AssetsHandler{service: service, batchService: aiService}
+func RegisterAssetsHandler(server *server.Server, service *asset.Service, aiService *ai.BatchPredictionService, uploader snapmatchai.Uploader) {
+	handler := &AssetsHandler{service: service, batchService: aiService, uploader: uploader}
 	server.RegisterRoute("GET /assets", handler.Get)
 	server.RegisterRoute("POST /assets", handler.Upload)
 	server.RegisterRoute("POST /assets/predict", handler.Predict)
@@ -33,7 +34,7 @@ type PredictRequest struct {
 }
 
 func (h *AssetsHandler) Predict(w http.ResponseWriter, r *http.Request) {
-	assets, _, err := h.service.List(r.Context(), snapmatchai.Pagination{})
+	/*assets, _, err := h.service.List(r.Context(), snapmatchai.Pagination{})
 	if err := r.ParseForm(); err != nil {
 		http.Error(w, "Failed to parse form data", http.StatusBadRequest)
 		return
@@ -46,8 +47,9 @@ func (h *AssetsHandler) Predict(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-
-	err = h.batchService.Predict(r.Context(), predictions.NewCategorizeImages(assets, req.Categories))
+	*/
+	//err = h.batchService.Predict(r.Context(), predictions.NewCategorizeImages(assets, req.Categories))
+	err := h.batchService.Predict(r.Context(), predictions.NewProductSearchTerm("prods.csv", h.uploader))
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
