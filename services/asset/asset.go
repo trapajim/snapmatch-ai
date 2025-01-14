@@ -114,11 +114,15 @@ func (s *Service) List(ctx context.Context, page snapmatchai.Pagination) ([]snap
 		where += "WHERE updated > @updated"
 	}
 	query := fmt.Sprintf(`
-SELECT *, signed_url 
+SELECT *, 
+  (SELECT value 
+   FROM UNNEST(metadata) 
+   WHERE name = 'category') AS category
 FROM EXTERNAL_OBJECT_TRANSFORM(TABLE %s.%s, ['SIGNED_URL'])
 %s
-ORDER BY updated DESC
-LIMIT 50`, s.appContext.Config.DatasetID, s.appContext.Config.TableID, where)
+ORDER BY category, updated DESC
+LIMIT 50
+`, s.appContext.Config.DatasetID, s.appContext.Config.TableID, where)
 	params := make(map[string]any)
 	if page.NextToken != "" {
 		t, err := page.DecodeNextToken()
