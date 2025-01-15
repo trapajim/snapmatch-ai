@@ -16,6 +16,14 @@ import (
 	"time"
 )
 
+type Similarity int
+
+const (
+	High Similarity = iota
+	Medium
+	Low
+)
+
 type Service struct {
 	appContext snapmatchai.Context
 }
@@ -81,8 +89,8 @@ func (s *Service) BatchUpload(ctx context.Context, files chan BatchUploadRequest
 }
 
 // Search searches for files in storage
-func (s *Service) Search(ctx context.Context, query string, page snapmatchai.Pagination) ([]snapmatchai.FileRecord, snapmatchai.Pagination, error) {
-	query, prms, err := buildQuery(s.appContext, query, page)
+func (s *Service) Search(ctx context.Context, query string, similiarity Similarity, page snapmatchai.Pagination) ([]snapmatchai.FileRecord, snapmatchai.Pagination, error) {
+	query, prms, err := buildQuery(s.appContext, query, similiarity, page)
 	if err != nil {
 		return nil, snapmatchai.Pagination{}, err
 	}
@@ -162,14 +170,14 @@ func (s *Service) SignURLs(ctx context.Context, records []snapmatchai.FileRecord
 		records[i].SignedURL = signedUrl
 	}
 }
-func buildQuery(appContext snapmatchai.Context, searchTerm string, page snapmatchai.Pagination) (string, map[string]any, error) {
+func buildQuery(appContext snapmatchai.Context, searchTerm string, similiartiy Similarity, page snapmatchai.Pagination) (string, map[string]any, error) {
 	table := fmt.Sprintf("%s_embeddings", appContext.Config.TableID)
 	parameters := make(map[string]any)
 	pageQuery := ""
 	if page.NextToken != "" {
 		pageQuery = fmt.Sprintf(" AND (distance > @last_distance OR (distance = @last_distance AND updated > @last_updated)) ")
 	}
-	distance := 1.02
+	distance := getDistance(similiartiy)
 	query := fmt.Sprintf(`
 WITH search_results AS ( 
   SELECT base.*, distance 
@@ -211,6 +219,18 @@ LIMIT 50;
 	return query, parameters, nil
 }
 
+func getDistance(similarity Similarity) float64 {
+	switch similarity {
+	case High:
+		return 1.02
+	case Medium:
+		return 1.03
+	case Low:
+		return 1.1
+	default:
+		return 1.02
+	}
+}
 func parsePaginationToken(token string) (string, float64, error) {
 	splitString := strings.Split(token, "##")
 	if len(splitString) != 2 {

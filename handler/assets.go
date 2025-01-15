@@ -10,7 +10,6 @@ import (
 	"github.com/trapajim/snapmatch-ai/templates/models"
 	"github.com/trapajim/snapmatch-ai/templates/pages"
 	"github.com/trapajim/snapmatch-ai/templates/partials"
-	"log"
 	"net/http"
 )
 
@@ -59,9 +58,11 @@ func (h *AssetsHandler) Get(w http.ResponseWriter, r *http.Request) {
 	q := r.URL.Query().Get("query")
 	var assets []snapmatchai.FileRecord
 	var err error
-	log.Println(q)
+
+	similarity := r.URL.Query().Get("similarity")
+	selectedSimilarity := h.similarityParamToValue(similarity)
 	if q != "" {
-		assets, _, err = h.service.Search(r.Context(), q, snapmatchai.Pagination{})
+		assets, _, err = h.service.Search(r.Context(), q, selectedSimilarity, snapmatchai.Pagination{})
 	} else {
 		assets, _, err = h.service.List(r.Context(), snapmatchai.Pagination{})
 	}
@@ -92,6 +93,19 @@ func (h *AssetsHandler) Get(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
+	}
+}
+
+func (h *AssetsHandler) similarityParamToValue(similarity string) asset.Similarity {
+	switch similarity {
+	case "high":
+		return asset.High
+	case "medium":
+		return asset.Medium
+	case "low":
+		return asset.Low
+	default:
+		return asset.High
 	}
 }
 

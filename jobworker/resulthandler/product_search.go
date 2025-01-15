@@ -33,7 +33,7 @@ func (c *ProductSearch) HandleResult(ctx context.Context, record jobworker.JSONL
 	if len(record.Response.Candidates) > 0 {
 		searchTerm = record.Response.Candidates[0].Content.Parts[0].Text
 	}
-	res, _, err := c.assetService.Search(ctx, strings.TrimSpace(searchTerm), snapmatchai.Pagination{})
+	res, _, err := c.assetService.Search(ctx, strings.TrimSpace(searchTerm), asset.High, snapmatchai.Pagination{})
 	if err != nil {
 		return fmt.Errorf("failed to search for product: %w", err)
 	}
