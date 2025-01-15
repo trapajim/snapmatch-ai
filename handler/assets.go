@@ -34,7 +34,7 @@ type PredictRequest struct {
 }
 
 func (h *AssetsHandler) Predict(w http.ResponseWriter, r *http.Request) {
-	/*assets, _, err := h.service.List(r.Context(), snapmatchai.Pagination{})
+	assets, _, err := h.service.List(r.Context(), snapmatchai.Pagination{})
 	if err := r.ParseForm(); err != nil {
 		http.Error(w, "Failed to parse form data", http.StatusBadRequest)
 		return
@@ -47,9 +47,7 @@ func (h *AssetsHandler) Predict(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	*/
-	//err = h.batchService.Predict(r.Context(), predictions.NewCategorizeImages(assets, req.Categories))
-	err := h.batchService.Predict(r.Context(), predictions.NewProductSearchTerm("prods.csv", h.uploader))
+	err = h.batchService.Predict(r.Context(), predictions.NewCategorizeImages(assets, req.Categories))
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return

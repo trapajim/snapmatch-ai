@@ -15,6 +15,7 @@ import (
 	"github.com/trapajim/snapmatch-ai/server"
 	"github.com/trapajim/snapmatch-ai/services/ai"
 	"github.com/trapajim/snapmatch-ai/services/asset"
+	"github.com/trapajim/snapmatch-ai/services/data"
 	"github.com/trapajim/snapmatch-ai/services/job"
 	"github.com/trapajim/snapmatch-ai/snapmatchai"
 	"github.com/trapajim/snapmatch-ai/uploader"
@@ -44,6 +45,7 @@ func main() {
 	handler.RegisterIndexHandler(s, jobService)
 	handler.RegisterAssetsHandler(s, asserService, batchPredictionService, appContext.Storage)
 	handler.RegisterJobsHandler(s, jobService)
+	handler.RegisterDataHandler(s, data.NewProductData(appContext, datastore.NewFirestoreRepository[*snapmatchai.ProductData](appContext.FireStore, "product_data")))
 	if err := s.Start(); err != nil {
 		log.Fatalf("Server failed: %s", err)
 	}
