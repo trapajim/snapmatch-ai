@@ -8,8 +8,10 @@ package pages
 import "github.com/a-h/templ"
 import templruntime "github.com/a-h/templ/runtime"
 
-import "github.com/trapajim/snapmatch-ai/templates/partials"
-import "github.com/trapajim/snapmatch-ai/templates/models"
+import (
+	"github.com/trapajim/snapmatch-ai/templates/models"
+	"github.com/trapajim/snapmatch-ai/templates/partials"
+)
 
 func Dashboard(title string, jobsStats models.BarChart) templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
@@ -52,20 +54,28 @@ func Dashboard(title string, jobsStats models.BarChart) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "</div><!-- CSV Upload Box --><div class=\"bg-white p-4 rounded-lg shadow-md\"><h2 class=\"text-lg font-bold mb-4\">Upload CSV</h2><div class=\"flex flex-col items-center\"><label for=\"csv-upload\" class=\"cursor-pointer bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded\">Choose CSV</label> <input id=\"csv-upload\" type=\"file\" accept=\".csv\" class=\"hidden\"></div></div></div><!-- Static Boxes for Images and Rows --> <div class=\"grid grid-cols-1 md:grid-cols-2 gap-6 mt-6\"><div class=\"bg-white p-4 rounded-lg shadow-md\"><h2 class=\"text-lg font-bold mb-4\">Job Statistics</h2><canvas id=\"statsChart\" width=\"400\" height=\"150\" data-chart=\"")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "</div><!-- CSV Upload Box --><div class=\"bg-white p-4 rounded-lg shadow-md\"><h2 class=\"text-lg font-bold mb-4\">Upload CSV</h2><div class=\"flex flex-col items-center\"><form action=\"/data\" hx-swap=\"none\" method=\"post\" enctype=\"multipart/form-data\" hx-post=\"/data\" hx-trigger=\"change\" hx-indicator=\"next\" class=\"flex flex-col items-center\"><label for=\"csv-upload\" class=\"cursor-pointer bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded\">Choose CSV</label> <input id=\"csv-upload\" name=\"file\" type=\"file\" accept=\".csv\" class=\"hidden\"></form>")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = partials.Indicator().Render(ctx, templ_7745c5c3_Buffer)
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 3, "</div></div></div><!-- Static Boxes for Images and Rows --> <div class=\"grid grid-cols-1 md:grid-cols-2 gap-6 mt-6\"><div class=\"bg-white p-4 rounded-lg shadow-md\"><h2 class=\"text-lg font-bold mb-4\">Job Statistics</h2><canvas id=\"statsChart\" width=\"400\" height=\"150\" data-chart=\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var3 string
 			templ_7745c5c3_Var3, templ_7745c5c3_Err = templ.JoinStringErrs(templ.JSONString(jobsStats))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `templates/pages/index.templ`, Line: 45, Col: 99}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `templates/pages/index.templ`, Line: 61, Col: 93}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var3))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 3, "\"></canvas></div><div class=\"flex flex-col gap-6 items-stretch\"><div class=\"flex-grow\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 4, "\"></canvas></div><div class=\"flex flex-col gap-6 items-stretch\"><div class=\"flex-grow\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -73,7 +83,7 @@ func Dashboard(title string, jobsStats models.BarChart) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 4, "</div><div class=\"flex-grow\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 5, "</div><div class=\"flex-grow\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -81,7 +91,7 @@ func Dashboard(title string, jobsStats models.BarChart) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 5, "</div></div></div><!-- Chart.js Script --> <script>\n\n\t\tconst el = document.getElementById('statsChart')\n        const ctx = el.getContext('2d');\n        const chartsData = JSON.parse(el.getAttribute('data-chart'));\n        const statsChart = new Chart(ctx, {\n          type: 'bar',\n          data: {\n            labels: chartsData.labels,\n            datasets: [{\n              data: chartsData.data,\n              backgroundColor: chartsData.colors,\n              borderWidth: 0\n            }]\n          },\n          options: {\n            plugins: {\n              legend: {\n                display: false\n              }\n            },\n            responsive: true,\n            scales: {\n              y: {\n                beginAtZero: true\n              }\n            }\n          }\n        });\n      </script>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 6, "</div></div></div><!-- Chart.js Script --> <script>\n\n\t\tconst el = document.getElementById('statsChart')\n        const ctx = el.getContext('2d');\n        const chartsData = JSON.parse(el.getAttribute('data-chart'));\n        const statsChart = new Chart(ctx, {\n          type: 'bar',\n          data: {\n            labels: chartsData.labels,\n            datasets: [{\n              data: chartsData.data,\n              backgroundColor: chartsData.colors,\n              borderWidth: 0\n            }]\n          },\n          options: {\n            plugins: {\n              legend: {\n                display: false\n              }\n            },\n            responsive: true,\n            scales: {\n              y: {\n                beginAtZero: true\n              }\n            }\n          }\n        });\n      </script>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
