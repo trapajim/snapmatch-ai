@@ -94,7 +94,7 @@ templ Assets(assets models.Assets) {
 				</div>
 			</div>
 			<div class="mb-4">
-			<form hx-get="/assets" hx-target="#assets-wrapper" class="flex flex-col sm:flex-row items-start sm:items-center space-y-4 sm:space-y-0 sm:space-x-4">
+			<form hx-get="/assets" hx-disabled-elt="#find" hx-indicator="next" hx-target="#assets-wrapper" class="flex flex-col sm:flex-row items-start sm:items-center space-y-4 sm:space-y-0 sm:space-x-4">
               <div class="flex flex-col flex-grow">
                 <label for="query" class="flex items-center text-sm font-medium text-gray-700">
                   Search Query
@@ -137,12 +137,13 @@ templ Assets(assets models.Assets) {
               </div>
               <button
                 type="submit"
+                id="find"
                 class="px-4 self-end py-2 bg-blue-500 text-white font-medium rounded-lg hover:bg-blue-600 transition"
               >
                 Search
               </button>
             </form>
-
+            @partials.Indicator()
 			</div>
 			<div id="assets-wrapper">
 				@partials.Assets(assets)

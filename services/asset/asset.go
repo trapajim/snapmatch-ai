@@ -1,15 +1,18 @@
 package asset
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"fmt"
+	"github.com/disintegration/imaging"
 	"github.com/trapajim/snapmatch-ai/pipeline"
 	"github.com/trapajim/snapmatch-ai/snapmatchai"
 	"io"
 	"log"
 	"log/slog"
 	"net/http"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"sync"
@@ -63,14 +66,26 @@ type BatchUploadRequest struct {
 func (s *Service) BatchUpload(ctx context.Context, files chan BatchUploadRequest) error {
 	var uploadErrs []error
 	var wg sync.WaitGroup
+	var mu sync.Mutex
 	go func() {
 		for file := range files {
 			wg.Add(1)
 			go func(f BatchUploadRequest) {
 				defer wg.Done()
-				err := s.Upload(ctx, f.File, f.Name)
+				optimizedFile, err := optimizeImage(f.File, f.Name)
 				if err != nil {
+					mu.Lock()
 					uploadErrs = append(uploadErrs, err)
+					mu.Unlock()
+					log.Println(err)
+					return
+				}
+				err = s.Upload(ctx, optimizedFile, f.Name)
+				if err != nil {
+					log.Println(err)
+					mu.Lock()
+					uploadErrs = append(uploadErrs, err)
+					mu.Unlock()
 				}
 			}(file)
 		}
@@ -123,9 +138,12 @@ func (s *Service) List(ctx context.Context, page snapmatchai.Pagination) ([]snap
 	}
 	query := fmt.Sprintf(`
 SELECT *, 
+  COALESCE(
   (SELECT value 
    FROM UNNEST(metadata) 
-   WHERE name = 'category') AS category
+   WHERE name = 'category'), 
+  ''
+) AS category
 FROM EXTERNAL_OBJECT_TRANSFORM(TABLE %s.%s, ['SIGNED_URL'])
 %s
 ORDER BY category, updated DESC
@@ -142,6 +160,12 @@ LIMIT 50
 	var rows []snapmatchai.FileRecord
 	err := s.appContext.DB.Query(ctx, query, params, &rows)
 	if err != nil {
+		var errAs *snapmatchai.Error
+		if errors.As(err, &errAs) {
+			log.Println(errAs.Message)
+			log.Println(errAs.Unwrap().Error())
+
+		}
 		return nil, page, err
 	}
 	if len(rows) == 0 {
@@ -280,4 +304,29 @@ func (s *Service) index(ctx context.Context, appCtx snapmatchai.Context) error {
 		return UpdateIndex(ctx, state.appContext, time.Now().Add(-time.Minute))
 	}}).Execute()
 	return p
+}
+
+func optimizeImage(file io.Reader, fileName string) (io.Reader, error) {
+	img, err := imaging.Decode(file)
+	if err != nil {
+		return nil, fmt.Errorf("failed to decode image: %v", err)
+	}
+	resizedImg := imaging.Resize(img, 1024, 0, imaging.Lanczos)
+
+	var buf bytes.Buffer
+	ext := strings.ToLower(filepath.Ext(fileName))
+	switch ext {
+	case ".jpg", ".jpeg":
+		err = imaging.Encode(&buf, resizedImg, imaging.JPEG, imaging.JPEGQuality(80))
+	case "png":
+		err = imaging.Encode(&buf, resizedImg, imaging.PNG)
+	default:
+		return nil, fmt.Errorf("unsupported image format: %s", ext)
+	}
+
+	if err != nil {
+		return nil, fmt.Errorf("failed to encode image: %v", err)
+	}
+
+	return &buf, nil
 }

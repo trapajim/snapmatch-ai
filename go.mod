@@ -8,6 +8,7 @@ require (
 	cloud.google.com/go/firestore v1.18.0
 	cloud.google.com/go/storage v1.49.0
 	github.com/a-h/templ v0.3.819
+	github.com/disintegration/imaging v1.6.2
 	github.com/stretchr/testify v1.9.0
 	google.golang.org/api v0.214.0
 	google.golang.org/protobuf v1.35.2
@@ -58,6 +59,7 @@ require (
 	go.opentelemetry.io/otel/trace v1.29.0 // indirect
 	golang.org/x/crypto v0.31.0 // indirect
 	golang.org/x/exp v0.0.0-20231006140011-7918f672742d // indirect
+	golang.org/x/image v0.0.0-20191009234506-e7c1f5e7dbb8 // indirect
 	golang.org/x/mod v0.20.0 // indirect
 	golang.org/x/net v0.33.0 // indirect
 	golang.org/x/oauth2 v0.24.0 // indirect
