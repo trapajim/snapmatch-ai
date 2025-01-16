@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/trapajim/snapmatch-ai/snapmatchai"
+	"golang.org/x/sync/errgroup"
 	"log/slog"
 	"path"
 	"strings"
@@ -119,11 +120,15 @@ func (w *JobWorker) ReadResults(ctx context.Context, job *snapmatchai.BatchPredi
 	if err != nil {
 		return fmt.Errorf("failed to get file: %w", err)
 	}
+	defer f.Close()
 	scanner := bufio.NewScanner(f)
 	handler, ok := w.handlers[job.JobType]
 	if !ok {
 		return fmt.Errorf("no handler found for job type: %s", job.JobType)
 	}
+	g, gCtx := errgroup.WithContext(ctx)
+	sem := make(chan struct{}, 20)
+
 	for scanner.Scan() {
 		line := scanner.Text()
 		var record JSONLRecord
@@ -131,10 +136,22 @@ func (w *JobWorker) ReadResults(ctx context.Context, job *snapmatchai.BatchPredi
 			w.logger.ErrorContext(ctx, fmt.Errorf("failed to parse JSON line: %w", err).Error())
 			continue
 		}
-		err = handler.HandleResult(ctx, record)
-		if err != nil {
-			return err
-		}
+		sem <- struct{}{}
+		g.Go(func() error {
+			defer func() { <-sem }() // Release semaphore slot when done
+			if err := handler.HandleResult(gCtx, record); err != nil {
+				return fmt.Errorf("failed to handle result for record: %v, error: %w", record, err)
+			}
+			return nil
+		})
+	}
+
+	if err := scanner.Err(); err != nil {
+		return fmt.Errorf("scanner error: %w", err)
+	}
+
+	if err := g.Wait(); err != nil {
+		return err
 	}
 
 	return nil

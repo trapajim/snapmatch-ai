@@ -25,3 +25,15 @@ func (c *ProductData) BatchInsert(ctx context.Context, data []snapmatchai.Produc
 	}
 	return nil
 }
+
+func (c *ProductData) Get(ctx context.Context, id string) (*snapmatchai.ProductData, error) {
+	return c.productRepo.Read(ctx, id)
+}
+
+func (c *ProductData) Update(ctx context.Context, data snapmatchai.ProductData) error {
+	return c.productRepo.Update(ctx, &data)
+}
+
+func (c *ProductData) List(ctx context.Context) ([]*snapmatchai.ProductData, error) {
+	return c.productRepo.List(ctx, nil)
+}

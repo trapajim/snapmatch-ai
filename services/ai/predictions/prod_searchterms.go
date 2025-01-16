@@ -1,23 +1,19 @@
 package predictions
 
 import (
-	"context"
-	"encoding/csv"
-	"errors"
 	"github.com/trapajim/snapmatch-ai/services/ai"
 	"github.com/trapajim/snapmatch-ai/snapmatchai"
-	"log"
 )
 
 type ProductSearchTerm struct {
-	csv      string
 	uploader snapmatchai.Uploader
+	products []*snapmatchai.ProductData
 }
 
-func NewProductSearchTerm(csv string, uploader snapmatchai.Uploader) *ProductSearchTerm {
+func NewProductSearchTerm(uploader snapmatchai.Uploader, products []*snapmatchai.ProductData) *ProductSearchTerm {
 	return &ProductSearchTerm{
-		csv:      csv,
 		uploader: uploader,
+		products: products,
 	}
 }
 
@@ -26,39 +22,6 @@ func (c *ProductSearchTerm) Name() string {
 }
 
 func (c *ProductSearchTerm) BuildPrediction() []ai.PredictionRequest {
-	// read the csv file
-	f, err := c.uploader.WithBucket("test").GetFile(context.Background(), c.csv)
-	if err != nil {
-		errAs := &snapmatchai.Error{}
-		if errors.As(err, &errAs) {
-			log.Println("Error reading file: ", errAs.Unwrap().Error())
-			return nil
-		}
-		log.Println("Error reading file: ", err)
-		return nil
-	}
-	defer f.Close()
-	reader := csv.NewReader(f)
-	headers, err := reader.Read()
-	if err != nil {
-		log.Println("Error reading CSV header: ", err)
-		return nil
-	}
-
-	rows, err := reader.ReadAll()
-	if err != nil {
-		log.Println("Error reading CSV rows: ", err)
-		return nil
-	}
-
-	var result []map[string]string
-	for _, row := range rows {
-		record := make(map[string]string)
-		for i, value := range row {
-			record[headers[i]] = value
-		}
-		result = append(result, record)
-	}
 	instructions := `
 		Given the product data below, 
 		generate a natural and context-rich search query that summarizes the product effectively for use in a vector-based search system. 
@@ -73,16 +36,15 @@ func (c *ProductSearchTerm) BuildPrediction() []ai.PredictionRequest {
 		Output: A stylish and timeless classic leather watch, perfect for everyday wear.
 		Now Generate a search term for the following product:
  		`
-	log.Println("Instructions: ", instructions)
-	req := make([]ai.PredictionRequest, len(result))
-	for i, img := range result {
-		line := c.buildBatchJobLine(img, instructions)
+	req := make([]ai.PredictionRequest, len(c.products))
+	for i, product := range c.products {
+		line := c.buildBatchJobLine(product.GetID(), product.Data, instructions)
 		req[i] = line
 	}
 	return req
 }
 
-func (c *ProductSearchTerm) buildBatchJobLine(product map[string]string, instructions string) ai.PredictionRequest {
+func (c *ProductSearchTerm) buildBatchJobLine(id string, product map[string]string, instructions string) ai.PredictionRequest {
 	for key, value := range product {
 		instructions += "\n" + key + ": " + value
 	}
@@ -91,7 +53,7 @@ func (c *ProductSearchTerm) buildBatchJobLine(product map[string]string, instruc
 			Contents: []ai.Content{
 				{
 					Role:  "user",
-					Parts: []ai.Parts{{Text: "name::" + product["Name"]}, {Text: instructions}},
+					Parts: []ai.Parts{{Text: "id::" + id}, {Text: instructions}},
 				},
 			},
 		},
