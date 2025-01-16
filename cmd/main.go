@@ -34,18 +34,19 @@ func main() {
 	}
 	appContext := createContext(context.Background())
 	s := server.NewServer(":"+port, appContext.Logger)
-	asserService := asset.NewService(appContext)
+	assetService := asset.NewService(appContext)
+	productService := data.NewProductData(appContext, datastore.NewFirestoreRepository[*snapmatchai.ProductData](appContext.FireStore, "product_data"))
 	batchPredictionRepository := datastore.NewFirestoreRepository[*snapmatchai.BatchPrediction](appContext.FireStore, "batch_predictions")
 	worker := jobworker.NewJobWorker(20*time.Second, batchPredictionRepository, appContext.Logger, appContext.GenAIBatch, appContext.Storage, appContext.Config.JobsStorageBucket)
 	worker.RegisterHandler("categorize_images", resulthandler.NewImageCategory(appContext.Storage))
-	worker.RegisterHandler("product_search_term", resulthandler.NewProductSearch(asserService))
+	worker.RegisterHandler("product_search_term", resulthandler.NewProductSearch(assetService, productService))
 	worker.Start(context.Background())
 	batchPredictionService := ai.NewBatchPredictionService(appContext, batchPredictionRepository, worker)
 	jobService := job.NewService(appContext, batchPredictionRepository)
 	handler.RegisterIndexHandler(s, jobService)
-	handler.RegisterAssetsHandler(s, asserService, batchPredictionService, appContext.Storage)
+	handler.RegisterAssetsHandler(s, assetService, batchPredictionService, appContext.Storage)
 	handler.RegisterJobsHandler(s, jobService)
-	handler.RegisterDataHandler(s, data.NewProductData(appContext, datastore.NewFirestoreRepository[*snapmatchai.ProductData](appContext.FireStore, "product_data")))
+	handler.RegisterDataHandler(s, productService, batchPredictionService, appContext.Storage)
 	if err := s.Start(); err != nil {
 		log.Fatalf("Server failed: %s", err)
 	}
