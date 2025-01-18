@@ -4,18 +4,21 @@ import (
 	"cloud.google.com/go/firestore"
 	"context"
 	"errors"
+	"github.com/trapajim/snapmatch-ai/services/ai"
 	"github.com/trapajim/snapmatch-ai/snapmatchai"
 	"google.golang.org/api/iterator"
 )
 
 type FirestoreRepository[T snapmatchai.Entity] struct {
 	client     *firestore.Client
+	aiService  *ai.Service
 	collection string
 }
 
-func NewFirestoreRepository[T snapmatchai.Entity](client *firestore.Client, collection string) *FirestoreRepository[T] {
+func NewFirestoreRepository[T snapmatchai.Entity](client *firestore.Client, aiService *ai.Service, collection string) *FirestoreRepository[T] {
 	return &FirestoreRepository[T]{
 		client:     client,
+		aiService:  aiService,
 		collection: collection,
 	}
 }
@@ -58,6 +61,35 @@ func (r *FirestoreRepository[T]) List(ctx context.Context, filters map[string]an
 	}
 
 	iter := query.Documents(ctx)
+	for {
+		doc, err := iter.Next()
+		if errors.Is(err, iterator.Done) {
+			break
+		}
+		if err != nil {
+			return nil, err
+		}
+
+		var entity T
+		if err := doc.DataTo(&entity); err != nil {
+			return nil, err
+		}
+		entity.SetID(doc.Ref.ID)
+		results = append(results, entity)
+	}
+
+	return results, nil
+}
+
+func (r *FirestoreRepository[T]) Search(ctx context.Context, query string) ([]T, error) {
+	var results []T
+	collection := r.client.Collection(r.collection)
+	emb, err := r.aiService.GenerateEmbeddings(ctx, query)
+	if err != nil {
+		return nil, err
+	}
+	vectorQuery := collection.FindNearest("VectorData", emb, 10, firestore.DistanceMeasureEuclidean, nil)
+	iter := vectorQuery.Documents(ctx)
 	for {
 		doc, err := iter.Next()
 		if errors.Is(err, iterator.Done) {

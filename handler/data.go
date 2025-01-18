@@ -16,12 +16,13 @@ import (
 type DataHandler struct {
 	s              *server.Server
 	productService *data.ProductData
+	aiService      *ai.Service
 	batchService   *ai.BatchPredictionService
 	uploader       snapmatchai.Uploader
 }
 
-func RegisterDataHandler(s *server.Server, productService *data.ProductData, batchService *ai.BatchPredictionService, uploader snapmatchai.Uploader) {
-	dataHandler := &DataHandler{s: s, productService: productService, batchService: batchService, uploader: uploader}
+func RegisterDataHandler(s *server.Server, productService *data.ProductData, aiService *ai.Service, batchService *ai.BatchPredictionService, uploader snapmatchai.Uploader) {
+	dataHandler := &DataHandler{s: s, productService: productService, batchService: batchService, aiService: aiService, uploader: uploader}
 	s.RegisterRoute("POST /data", dataHandler.Post)
 	s.RegisterRoute("GET /data", dataHandler.List)
 	s.RegisterRoute("POST /data/match", dataHandler.Match)
@@ -103,15 +104,20 @@ func (h *DataHandler) Post(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Failed to read CSV rows", http.StatusInternalServerError)
 		return
 	}
-
 	var result []snapmatchai.ProductData
 	for _, row := range rows {
 		record := make(map[string]string)
 		for i, value := range row {
 			record[headers[i]] = value
 		}
+		emb, err := h.aiService.GenerateEmbeddings(r.Context(), record["Name"]+record["Description"])
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
 		f := snapmatchai.ProductData{
-			Data: record,
+			Data:       record,
+			VectorData: emb,
 		}
 		result = append(result, f)
 	}

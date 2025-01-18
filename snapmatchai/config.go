@@ -4,6 +4,7 @@ import "os"
 
 type Config struct {
 	StorageBucket     string
+	GeminiAPIKey      string
 	JobsStorageBucket string
 	ProjectID         string
 	Location          string
@@ -17,6 +18,7 @@ type Config struct {
 func NewConfig() *Config {
 	return &Config{
 		StorageBucket:     os.Getenv("STORAGE_BUCKET"),
+		GeminiAPIKey:      os.Getenv("GEMINI_API_KEY"),
 		JobsStorageBucket: os.Getenv("JOBS_STORAGE_BUCKET"),
 		ProjectID:         os.Getenv("PROJECT_ID"),
 		Location:          os.Getenv("LOCATION"),

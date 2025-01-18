@@ -34,11 +34,16 @@ type Repository[T Entity] interface {
 	Update(ctx context.Context, entity T) error
 	Delete(ctx context.Context, id string) error
 	List(ctx context.Context, filters map[string]any) ([]T, error)
+	Search(ctx context.Context, query string) ([]T, error)
 }
 
 type GenAIBatch interface {
 	CreateBatchPredictionJob(context.Context, BatchPrediction) (BatchPrediction, error)
 	GetBatchPredictionJob(context.Context, string) (BatchPrediction, error)
+}
+
+type GenAI interface {
+	GenerateEmbeddings(context.Context, string) ([]float32, error)
 }
 type Context struct {
 	Logger     *slog.Logger
@@ -46,5 +51,6 @@ type Context struct {
 	FireStore  *firestore.Client
 	DB         DataStore
 	GenAIBatch GenAIBatch
+	GenAI      GenAI
 	Config     *Config
 }

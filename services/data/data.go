@@ -37,3 +37,7 @@ func (c *ProductData) Update(ctx context.Context, data snapmatchai.ProductData) 
 func (c *ProductData) List(ctx context.Context) ([]*snapmatchai.ProductData, error) {
 	return c.productRepo.List(ctx, nil)
 }
+
+func (c *ProductData) Search(ctx context.Context, query string) ([]*snapmatchai.ProductData, error) {
+	return c.productRepo.Search(ctx, query)
+}

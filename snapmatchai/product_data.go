@@ -1,8 +1,11 @@
 package snapmatchai
 
+import "cloud.google.com/go/firestore"
+
 type ProductData struct {
 	ID         string
 	Data       map[string]string
+	VectorData firestore.Vector32
 	AssetLinks []string
 }
 

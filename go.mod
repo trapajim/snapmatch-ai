@@ -9,7 +9,9 @@ require (
 	cloud.google.com/go/storage v1.49.0
 	github.com/a-h/templ v0.3.819
 	github.com/disintegration/imaging v1.6.2
+	github.com/google/generative-ai-go v0.19.0
 	github.com/stretchr/testify v1.9.0
+	golang.org/x/sync v0.10.0
 	google.golang.org/api v0.214.0
 	google.golang.org/protobuf v1.35.2
 )
@@ -17,6 +19,7 @@ require (
 require (
 	cel.dev/expr v0.16.1 // indirect
 	cloud.google.com/go v0.117.0 // indirect
+	cloud.google.com/go/ai v0.8.0 // indirect
 	cloud.google.com/go/auth v0.13.0 // indirect
 	cloud.google.com/go/auth/oauth2adapt v0.2.6 // indirect
 	cloud.google.com/go/compute/metadata v0.6.0 // indirect
@@ -63,7 +66,6 @@ require (
 	golang.org/x/mod v0.20.0 // indirect
 	golang.org/x/net v0.33.0 // indirect
 	golang.org/x/oauth2 v0.24.0 // indirect
-	golang.org/x/sync v0.10.0 // indirect
 	golang.org/x/sys v0.28.0 // indirect
 	golang.org/x/text v0.21.0 // indirect
 	golang.org/x/time v0.8.0 // indirect

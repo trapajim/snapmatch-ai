@@ -7,6 +7,7 @@ import (
 	"cloud.google.com/go/storage"
 	"context"
 	"fmt"
+	googleGenAI "github.com/google/generative-ai-go/genai"
 	"github.com/trapajim/snapmatch-ai/datastore"
 	"github.com/trapajim/snapmatch-ai/genai"
 	"github.com/trapajim/snapmatch-ai/handler"
@@ -34,9 +35,10 @@ func main() {
 	}
 	appContext := createContext(context.Background())
 	s := server.NewServer(":"+port, appContext.Logger)
+	aiService := ai.NewService(appContext)
 	assetService := asset.NewService(appContext)
-	productService := data.NewProductData(appContext, datastore.NewFirestoreRepository[*snapmatchai.ProductData](appContext.FireStore, "product_data"))
-	batchPredictionRepository := datastore.NewFirestoreRepository[*snapmatchai.BatchPrediction](appContext.FireStore, "batch_predictions")
+	productService := data.NewProductData(appContext, datastore.NewFirestoreRepository[*snapmatchai.ProductData](appContext.FireStore, aiService, "product_data"))
+	batchPredictionRepository := datastore.NewFirestoreRepository[*snapmatchai.BatchPrediction](appContext.FireStore, aiService, "batch_predictions")
 	worker := jobworker.NewJobWorker(20*time.Second, batchPredictionRepository, appContext.Logger, appContext.GenAIBatch, appContext.Storage, appContext.Config.JobsStorageBucket)
 	worker.RegisterHandler("categorize_images", resulthandler.NewImageCategory(appContext.Storage))
 	worker.RegisterHandler("product_search_term", resulthandler.NewProductSearch(assetService, productService))
@@ -46,7 +48,7 @@ func main() {
 	handler.RegisterIndexHandler(s, jobService)
 	handler.RegisterAssetsHandler(s, assetService, batchPredictionService, appContext.Storage)
 	handler.RegisterJobsHandler(s, jobService)
-	handler.RegisterDataHandler(s, productService, batchPredictionService, appContext.Storage)
+	handler.RegisterDataHandler(s, productService, aiService, batchPredictionService, appContext.Storage)
 	if err := s.Start(); err != nil {
 		log.Fatalf("Server failed: %s", err)
 	}
@@ -66,12 +68,16 @@ func createContext(ctx context.Context) snapmatchai.Context {
 	aiBatchClient := genai.NewBatchClient(aiClient, config.Location, config.ProjectID)
 	firestoreClient, err := firestore.NewClient(ctx, config.ProjectID)
 	fatalErr(err)
+	googleGenaiClient, err := googleGenAI.NewClient(context.Background(), option.WithAPIKey(config.GeminiAPIKey))
+	fatalErr(err)
+	genaiClient := genai.NewClient(googleGenaiClient)
 	return snapmatchai.Context{
 		Logger:     slog.New(slog.NewJSONHandler(os.Stdout, nil)),
 		Storage:    client,
 		FireStore:  firestoreClient,
 		DB:         datastore.NewBigQuery(bqClient),
 		GenAIBatch: aiBatchClient,
+		GenAI:      genaiClient,
 		Config:     config,
 	}
 }
