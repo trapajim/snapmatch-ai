@@ -50,11 +50,12 @@ type AIChat interface {
 	SendMessage(context.Context, ...AIPart) ([]AIResponse, error)
 }
 type Context struct {
-	Logger     *slog.Logger
-	Storage    Uploader
-	FireStore  *firestore.Client
-	DB         DataStore
-	GenAIBatch GenAIBatch
-	GenAI      GenAI
-	Config     *Config
+	Logger         *slog.Logger
+	Storage        Uploader
+	FireStore      *firestore.Client
+	DB             DataStore
+	GenAIBatch     GenAIBatch
+	GenAI          GenAI
+	Config         *Config
+	SessionManager *Manager
 }

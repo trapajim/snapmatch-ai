@@ -13,7 +13,9 @@ import (
 	"github.com/trapajim/snapmatch-ai/handler"
 	"github.com/trapajim/snapmatch-ai/jobworker"
 	"github.com/trapajim/snapmatch-ai/jobworker/resulthandler"
+	_ "github.com/trapajim/snapmatch-ai/memory"
 	"github.com/trapajim/snapmatch-ai/server"
+	"github.com/trapajim/snapmatch-ai/server/middleware"
 	"github.com/trapajim/snapmatch-ai/services/ai"
 	"github.com/trapajim/snapmatch-ai/services/asset"
 	"github.com/trapajim/snapmatch-ai/services/data"
@@ -45,6 +47,7 @@ func main() {
 	worker.Start(context.Background())
 	batchPredictionService := ai.NewBatchPredictionService(appContext, batchPredictionRepository, worker)
 	jobService := job.NewService(appContext, batchPredictionRepository)
+	s.RegisterMiddleware(middleware.AuthMiddleware(appContext.SessionManager))
 	handler.RegisterIndexHandler(s, jobService)
 	handler.RegisterAssetsHandler(s, assetService, batchPredictionService, appContext.Storage)
 	handler.RegisterJobsHandler(s, jobService)
@@ -70,14 +73,18 @@ func createContext(ctx context.Context) snapmatchai.Context {
 	googleGenaiClient, err := googleGenAI.NewClient(context.Background(), option.WithAPIKey(config.GeminiAPIKey))
 	fatalErr(err)
 	genaiClient := genai.NewClient(googleGenaiClient)
+	sessionManager, err := snapmatchai.NewManager("memory", "gosessionid", 3600)
+	fatalErr(err)
+	go sessionManager.GC()
 	return snapmatchai.Context{
-		Logger:     slog.New(slog.NewJSONHandler(os.Stdout, nil)),
-		Storage:    client,
-		FireStore:  firestoreClient,
-		DB:         datastore.NewBigQuery(bqClient),
-		GenAIBatch: aiBatchClient,
-		GenAI:      genaiClient,
-		Config:     config,
+		Logger:         slog.New(slog.NewJSONHandler(os.Stdout, nil)),
+		Storage:        client,
+		FireStore:      firestoreClient,
+		DB:             datastore.NewBigQuery(bqClient),
+		GenAIBatch:     aiBatchClient,
+		GenAI:          genaiClient,
+		Config:         config,
+		SessionManager: sessionManager,
 	}
 }
 
