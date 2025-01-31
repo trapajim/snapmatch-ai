@@ -25,6 +25,7 @@ func RegisterAssetsHandler(server *server.Server, service *asset.Service, aiServ
 	server.RegisterRoute("GET /assets", handler.Get)
 	server.RegisterRoute("POST /assets", handler.Upload)
 	server.RegisterRoute("POST /assets/predict", handler.Predict)
+	server.RegisterRoute("POST /assets/similar", handler.Similar)
 
 }
 
@@ -73,7 +74,7 @@ func (h *AssetsHandler) Get(w http.ResponseWriter, r *http.Request) {
 	viewModel := make(models.Assets, len(assets))
 	for i, a := range assets {
 		viewModel[i] = models.Asset{
-			Name:     a.ObjName,
+			Name:     a.URI,
 			Size:     a.Size,
 			Type:     a.ContentType,
 			Date:     a.Updated,
@@ -155,6 +156,42 @@ func (h *AssetsHandler) Upload(w http.ResponseWriter, r *http.Request) {
 		return
 	case <-r.Context().Done():
 		http.Error(w, "Request was canceled", http.StatusRequestTimeout)
+		return
+	}
+}
+
+type SimilarRequest struct {
+	AssetURI string `json:"asset_uri"`
+	Mode     string `json:"mode"`
+}
+
+func (h *AssetsHandler) Similar(w http.ResponseWriter, r *http.Request) {
+	// unmarshal request
+	err := r.ParseForm()
+	if err != nil {
+		http.Error(w, "Failed to parse form data", http.StatusBadRequest)
+		return
+	}
+	req := SimilarRequest{
+		AssetURI: r.FormValue("asset_uri"),
+		Mode:     r.FormValue("mode"),
+	}
+	req.Mode = "similar"
+	assets, _ := h.service.FindSimilarImages(r.Context(), req.AssetURI, req.Mode)
+	viewModel := make(models.Assets, len(assets))
+	for i, a := range assets {
+		viewModel[i] = models.Asset{
+			Name:     a.URI,
+			Size:     a.Size,
+			Type:     a.ContentType,
+			Date:     a.Updated,
+			Category: a.Category,
+			URI:      a.SignedURL,
+		}
+	}
+	err = partials.Assets(viewModel).Render(r.Context(), w)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 }

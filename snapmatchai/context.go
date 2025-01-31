@@ -44,6 +44,10 @@ type GenAIBatch interface {
 
 type GenAI interface {
 	GenerateEmbeddings(context.Context, string) ([]float32, error)
+	StartChat(context.Context, []AITools) AIChat
+}
+type AIChat interface {
+	SendMessage(context.Context, ...AIPart) ([]AIResponse, error)
 }
 type Context struct {
 	Logger     *slog.Logger

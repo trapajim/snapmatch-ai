@@ -7,21 +7,52 @@ import (
 )
 
 templ Assets(assets models.Assets) {
-    {{ category := ""}}
+	{{ category := "" }}
+	<div id="pageIndicator">
+<div class="my-indicator">
+    <div class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-10">
+        <div class="w-8 h-8 border-4 border-t-transparent border-white rounded-full animate-spin"></div>
+    </div>
+</div>	</div>
+
 	<div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
 		for _, asset := range assets {
-		        if category != asset.Category {
-		            <h2 class="col-span-full text-xl font-semibold text-gray-800">{ asset.Category }</h2>
-		            {{category = asset.Category}}
-                }
-			<div class="bg-white border border-gray-200 rounded-lg shadow hover:shadow-lg transition-shadow duration-300">
-				<img loading="lazy" src={ asset.URI } alt={ asset.Name } class="w-full h-48 object-cover rounded-t-lg"/>
+			if category != asset.Category {
+				<h2 class="col-span-full text-xl font-semibold text-gray-800">{ asset.Category }</h2>
+				{{ category = asset.Category }}
+			}
+			<div class="bg-white border border-gray-200 rounded-lg shadow hover:shadow-lg transition-shadow duration-300 relative group">
+				<img
+					loading="lazy"
+					src={ asset.URI }
+					alt={ asset.Name }
+					class="w-full h-48 object-cover rounded-t-lg"
+				/>
 				<div class="p-4">
-					<h2 class="text-lg font-semibold text-gray-800 truncate">{ asset.Name }</h2>
 					<p class="text-sm text-gray-600">{ strconv.Itoa(asset.Size) } bytes</p>
 					<p class="text-sm text-gray-600">Type: { asset.Type }</p>
 					<p class="text-sm text-gray-600">Date: { asset.Date.Format(time.DateTime) }</p>
 					<a href="{asset.URI}" target="_blank" class="mt-2 inline-block text-blue-500 underline">View</a>
+				</div>
+				<!-- Hover Icons -->
+				<div class="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center space-x-4 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+					<form hx-post="/assets/similar" hx-indicator="#pageIndicator:first-child" hx-target="#assets-wrapper">
+						<input type="hidden" name="asset_uri" value={ asset.Name }/>
+						<input type="hidden" name="mode" value="similar"/>
+						<button
+							type="submit"
+							class="relative text-white hover:text-blue-400"
+						>
+							<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 peer" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4h16v16H4V4zM10 10l2-2 2 2M12 12l2 2M10 14l2-2 2 2"></path>
+								<circle cx="18" cy="18" r="3" stroke-width="2"></circle>
+								<path d="M20.5 20.5L23 23" stroke-width="2"></path>
+							</svg>
+							<span class="absolute bottom-full mb-2 hidden peer-hover:block bg-gray-800 text-white text-xs font-semibold rounded px-2 py-1">
+								Find Similar Images
+							</span>
+						</button>
+					</form>
 				</div>
 			</div>
 		}

@@ -53,7 +53,6 @@ func main() {
 		log.Fatalf("Server failed: %s", err)
 	}
 }
-
 func createContext(ctx context.Context) snapmatchai.Context {
 	config := snapmatchai.NewConfig()
 	storageClient, err := storage.NewClient(ctx)

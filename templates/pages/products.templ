@@ -1,39 +1,63 @@
 package pages
 
+import "github.com/trapajim/snapmatch-ai/templates/partials"
+
 templ Products(products []map[string]string, headers []string) {
-    @Page("Products") {
-        <div class="container mx-auto py-6">
-            <div class="flex items-center justify-between">
-                <h1 class="text-2xl font-bold text-gray-800 mb-4">Products</h1>
-            </div>
-            <div id="product-wrapper">
-                <table class="table-auto w-full bg-white shadow-md rounded-lg">
-                    <thead class="bg-gray-100 border-b">
-                        <tr>
-                            if len(headers) > 0 {
-                                for _, value := range headers {
-                                    <th class="px-4 py-2 text-left text-gray-600 font-medium">{ value }</th>
-                                }
-                            }
-                        </tr>
-                    </thead>
-                    <tbody>
-                        for index, product := range products {
-                            <tr class={"hover:bg-gray-100", templ.KV("bg-gray-50", index % 2 == 0), templ.KV("bg-white", index % 2 != 0)}>
-                                 for _, value := range headers {
-                                    if value == "__asset_url" {
-                                        <td class="px-4 py-3 text-gray-800 text-sm">
-                                            <img src={ product[value] } class="w-10 h-10 object-cover rounded-lg" />
-                                        </td>
-                                    } else {
-                                        <td class="px-4 py-3 text-gray-800 text-sm">{ product[value] }</td>
-                                    }
-                                }
-                            </tr>
-                        }
-                    </tbody>
-                </table>
-            </div>
-        </div>
-    }
+	@Page("Products") {
+		<div class="container mx-auto py-6">
+			<div class="flex items-center justify-between">
+				<h1 class="text-2xl font-bold text-gray-800 mb-4">Products</h1>
+			</div>
+			<form hx-get="/data" hx-disabled-elt="#find" hx-select="#product-wrapper" hx-indicator="next" hx-target="#product-wrapper" class="flex flex-col sm:flex-row items-start sm:items-center space-y-4 sm:space-y-0 sm:space-x-4">
+				<div class="flex flex-col flex-grow">
+					<label for="query" class="flex items-center text-sm font-medium text-gray-700">
+						Search Query
+					</label>
+					<input
+						type="text"
+						name="query"
+						id="query"
+						placeholder="Search products..."
+						class="flex-grow px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring focus:ring-blue-200"
+					/>
+				</div>
+				<button
+					type="submit"
+					id="find"
+					class="px-4 self-end py-2 bg-blue-500 text-white font-medium rounded-lg hover:bg-blue-600 transition"
+				>
+					Search
+				</button>
+			</form>
+			@partials.Indicator()
+			<div id="product-wrapper">
+				<table class="table-auto w-full bg-white shadow-md rounded-lg">
+					<thead class="bg-gray-100 border-b">
+						<tr>
+							if len(headers) > 0 {
+								for _, value := range headers {
+									<th class="px-4 py-2 text-left text-gray-600 font-medium">{ value }</th>
+								}
+							}
+						</tr>
+					</thead>
+					<tbody>
+						for index, product := range products {
+							<tr class={ "hover:bg-gray-100", templ.KV("bg-gray-50", index % 2 == 0), templ.KV("bg-white", index % 2 != 0) }>
+								for _, value := range headers {
+									if value == "__asset_url" {
+										<td class="px-4 py-3 text-gray-800 text-sm">
+											<img src={ product[value] } class="w-10 h-10 object-cover rounded-lg"/>
+										</td>
+									} else {
+										<td class="px-4 py-3 text-gray-800 text-sm">{ product[value] }</td>
+									}
+								}
+							</tr>
+						}
+					</tbody>
+				</table>
+			</div>
+		</div>
+	}
 }

@@ -12,6 +12,7 @@ import (
 	"log"
 	"log/slog"
 	"net/http"
+	"path"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -55,6 +56,118 @@ func (s *Service) Upload(ctx context.Context, file io.Reader, fileName string) e
 		return snapmatchai.NewError(err, fmt.Errorf("could not upload file %s with error %w", fileName, err).Error(), 500)
 	}
 	return nil
+}
+
+func (s *Service) FindSimilarImages(ctx context.Context, file string, mode string) ([]snapmatchai.FileRecord, error) {
+	fileName := path.Base(file)
+	f, err := s.appContext.Storage.GetFile(ctx, fileName)
+	if err != nil {
+		return nil, err
+	}
+	imgData, err := io.ReadAll(f)
+	if err != nil {
+		return nil, err
+	}
+	searchPrompt := ""
+	if mode == "exact" {
+		searchPrompt = "Based on the bellow image search for similar images. We are trying to find the same product for example other angles of the same product, but the main attributes should be the same"
+	} else if mode == "similar" {
+		searchPrompt = "Based on the bellow image search for images with similar attributes, this should include color variation of the product and other similar products"
+	} else if mode == "related" {
+		searchPrompt = "Based on the bellow image search for images that are related to the product in the image"
+	} else {
+		searchPrompt = "Based on the bellow image search for similar images. Focus on the main object"
+	}
+	log.Println(searchPrompt)
+	chatClient := s.appContext.GenAI.StartChat(ctx, s.similarFuncs())
+	resp, err := chatClient.SendMessage(ctx,
+		snapmatchai.Text(searchPrompt), snapmatchai.Blob{
+			MIMEType: "image/jpeg",
+			Data:     imgData,
+		})
+	q, ok := resp[0].(snapmatchai.FunctionCall)
+	if !ok {
+		return nil, snapmatchai.NewError(nil, "invalid response from ai client", 400)
+	}
+	sim := Medium
+	if mode == "exact" {
+		sim = High
+	}
+	searchResp, _, err := s.Search(ctx, q.Args[0].Value.(string), sim, snapmatchai.Pagination{})
+	if err != nil {
+		return nil, err
+	}
+	images := make([]snapmatchai.AIPart, len(searchResp))
+	images = append(images, snapmatchai.Text("Here are the search results choose maximum the top 3 similar_images and provide the image name and reason for choosing the image"))
+	frMap := make(map[string]snapmatchai.FileRecord)
+
+	for _, r := range searchResp {
+		frMap[r.ObjName] = r
+		if r.ObjName == fileName {
+			continue
+		}
+		f, err := s.appContext.Storage.GetFile(ctx, r.ObjName)
+		if err != nil {
+			log.Println(err)
+			continue
+		}
+		imgData, err := io.ReadAll(f)
+		if err != nil {
+			log.Println(err)
+			continue
+		}
+		images = append(images, snapmatchai.Text(fmt.Sprintf("\n Name: %s \n Image: ", r.ObjName)))
+		images = append(images, snapmatchai.Blob{
+			MIMEType: r.ContentType,
+			Data:     imgData,
+		})
+	}
+	resp, err = chatClient.SendMessage(ctx, images...)
+	result := make([]snapmatchai.FileRecord, 0)
+	result = append(result, frMap[fileName])
+	log.Println(len(resp))
+	for _, r := range resp {
+		if f, ok := r.(snapmatchai.FunctionCall); ok {
+			for _, a := range f.Args {
+				if img, found := frMap[a.Value.(string)]; found {
+					result = append(result, img)
+				}
+			}
+		}
+	}
+	return result, nil
+}
+
+func (s *Service) similarFuncs() []snapmatchai.AITools {
+	return []snapmatchai.AITools{
+		{
+			Name:        "search",
+			Description: "search for similar images",
+			Props: []snapmatchai.AIToolProps{
+				{
+					Key:         "query",
+					Description: "search query",
+					Type:        snapmatchai.AIToolPropsTypeString,
+				},
+			},
+		},
+		{
+			Name:        "similar_images",
+			Description: "choose the top 3 similar image",
+			Props: []snapmatchai.AIToolProps{
+				{
+					Key:         "image",
+					Description: "name of the image chosen",
+					Type:        snapmatchai.AIToolPropsTypeString,
+				},
+				{
+					Key:         "reason",
+					Description: "reason for choosing the image",
+					Type:        snapmatchai.AIToolPropsTypeString,
+				},
+			},
+		},
+	}
 }
 
 type BatchUploadRequest struct {

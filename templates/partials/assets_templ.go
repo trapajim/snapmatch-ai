@@ -36,7 +36,7 @@ func Assets(assets models.Assets) templ.Component {
 		}
 		ctx = templ.ClearChildren(ctx)
 		category := ""
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<div class=\"grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<div id=\"pageIndicator\"><div class=\"my-indicator\"><div class=\"fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-10\"><div class=\"w-8 h-8 border-4 border-t-transparent border-white rounded-full animate-spin\"></div></div></div></div><div class=\"grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -49,7 +49,7 @@ func Assets(assets models.Assets) templ.Component {
 				var templ_7745c5c3_Var2 string
 				templ_7745c5c3_Var2, templ_7745c5c3_Err = templ.JoinStringErrs(asset.Category)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `templates/partials/assets.templ`, Line: 14, Col: 92}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `templates/partials/assets.templ`, Line: 21, Col: 82}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var2))
 				if templ_7745c5c3_Err != nil {
@@ -61,14 +61,14 @@ func Assets(assets models.Assets) templ.Component {
 				}
 				category = asset.Category
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 4, " <div class=\"bg-white border border-gray-200 rounded-lg shadow hover:shadow-lg transition-shadow duration-300\"><img loading=\"lazy\" src=\"")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 4, " <div class=\"bg-white border border-gray-200 rounded-lg shadow hover:shadow-lg transition-shadow duration-300 relative group\"><img loading=\"lazy\" src=\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var3 string
 			templ_7745c5c3_Var3, templ_7745c5c3_Err = templ.JoinStringErrs(asset.URI)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `templates/partials/assets.templ`, Line: 18, Col: 39}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `templates/partials/assets.templ`, Line: 27, Col: 20}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var3))
 			if templ_7745c5c3_Err != nil {
@@ -81,65 +81,65 @@ func Assets(assets models.Assets) templ.Component {
 			var templ_7745c5c3_Var4 string
 			templ_7745c5c3_Var4, templ_7745c5c3_Err = templ.JoinStringErrs(asset.Name)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `templates/partials/assets.templ`, Line: 18, Col: 58}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `templates/partials/assets.templ`, Line: 28, Col: 21}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var4))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 6, "\" class=\"w-full h-48 object-cover rounded-t-lg\"><div class=\"p-4\"><h2 class=\"text-lg font-semibold text-gray-800 truncate\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 6, "\" class=\"w-full h-48 object-cover rounded-t-lg\"><div class=\"p-4\"><p class=\"text-sm text-gray-600\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var5 string
-			templ_7745c5c3_Var5, templ_7745c5c3_Err = templ.JoinStringErrs(asset.Name)
+			templ_7745c5c3_Var5, templ_7745c5c3_Err = templ.JoinStringErrs(strconv.Itoa(asset.Size))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `templates/partials/assets.templ`, Line: 20, Col: 74}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `templates/partials/assets.templ`, Line: 32, Col: 64}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var5))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 7, "</h2><p class=\"text-sm text-gray-600\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 7, " bytes</p><p class=\"text-sm text-gray-600\">Type: ")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var6 string
-			templ_7745c5c3_Var6, templ_7745c5c3_Err = templ.JoinStringErrs(strconv.Itoa(asset.Size))
+			templ_7745c5c3_Var6, templ_7745c5c3_Err = templ.JoinStringErrs(asset.Type)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `templates/partials/assets.templ`, Line: 21, Col: 64}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `templates/partials/assets.templ`, Line: 33, Col: 56}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var6))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 8, " bytes</p><p class=\"text-sm text-gray-600\">Type: ")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 8, "</p><p class=\"text-sm text-gray-600\">Date: ")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var7 string
-			templ_7745c5c3_Var7, templ_7745c5c3_Err = templ.JoinStringErrs(asset.Type)
+			templ_7745c5c3_Var7, templ_7745c5c3_Err = templ.JoinStringErrs(asset.Date.Format(time.DateTime))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `templates/partials/assets.templ`, Line: 22, Col: 56}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `templates/partials/assets.templ`, Line: 34, Col: 78}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var7))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 9, "</p><p class=\"text-sm text-gray-600\">Date: ")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 9, "</p><a href=\"{asset.URI}\" target=\"_blank\" class=\"mt-2 inline-block text-blue-500 underline\">View</a></div><!-- Hover Icons --><div class=\"absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center space-x-4 opacity-0 group-hover:opacity-100 transition-opacity duration-300\"><form hx-post=\"/assets/similar\" hx-indicator=\"#pageIndicator:first-child\" hx-target=\"#assets-wrapper\"><input type=\"hidden\" name=\"asset_uri\" value=\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var8 string
-			templ_7745c5c3_Var8, templ_7745c5c3_Err = templ.JoinStringErrs(asset.Date.Format(time.DateTime))
+			templ_7745c5c3_Var8, templ_7745c5c3_Err = templ.JoinStringErrs(asset.Name)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `templates/partials/assets.templ`, Line: 23, Col: 78}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `templates/partials/assets.templ`, Line: 40, Col: 62}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var8))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 10, "</p><a href=\"{asset.URI}\" target=\"_blank\" class=\"mt-2 inline-block text-blue-500 underline\">View</a></div></div>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 10, "\"> <input type=\"hidden\" name=\"mode\" value=\"similar\"> <button type=\"submit\" class=\"relative text-white hover:text-blue-400\"><svg xmlns=\"http://www.w3.org/2000/svg\" class=\"h-6 w-6 peer\" fill=\"none\" viewBox=\"0 0 24 24\" stroke=\"currentColor\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"2\" d=\"M4 4h16v16H4V4zM10 10l2-2 2 2M12 12l2 2M10 14l2-2 2 2\"></path> <circle cx=\"18\" cy=\"18\" r=\"3\" stroke-width=\"2\"></circle> <path d=\"M20.5 20.5L23 23\" stroke-width=\"2\"></path></svg> <span class=\"absolute bottom-full mb-2 hidden peer-hover:block bg-gray-800 text-white text-xs font-semibold rounded px-2 py-1\">Find Similar Images</span></button></form></div></div>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}

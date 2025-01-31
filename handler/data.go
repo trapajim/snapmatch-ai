@@ -29,7 +29,14 @@ func RegisterDataHandler(s *server.Server, productService *data.ProductData, aiS
 }
 
 func (h *DataHandler) List(w http.ResponseWriter, r *http.Request) {
-	products, err := h.productService.List(r.Context())
+	q := r.URL.Query().Get("query")
+	var products []*snapmatchai.ProductData
+	var err error
+	if q != "" {
+		products, err = h.productService.Search(r.Context(), q)
+	} else {
+		products, err = h.productService.List(r.Context())
+	}
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
