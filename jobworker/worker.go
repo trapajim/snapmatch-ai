@@ -5,8 +5,10 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/trapajim/snapmatch-ai/server/middleware"
 	"github.com/trapajim/snapmatch-ai/snapmatchai"
 	"golang.org/x/sync/errgroup"
+	"log"
 	"log/slog"
 	"path"
 	"strings"
@@ -14,11 +16,16 @@ import (
 	"time"
 )
 
+type JobData struct {
+	batchPreds *snapmatchai.BatchPrediction
+	session    *snapmatchai.Session
+}
+
 type ResultHandler interface {
 	HandleResult(ctx context.Context, record JSONLRecord) error
 }
 type JobWorker struct {
-	jobChan       chan *snapmatchai.BatchPrediction
+	jobChan       chan *JobData
 	jobRepo       snapmatchai.Repository[*snapmatchai.BatchPrediction]
 	jobBucket     string
 	uploader      snapmatchai.Uploader
@@ -32,7 +39,7 @@ type JobWorker struct {
 
 func NewJobWorker(checkInterval time.Duration, repo snapmatchai.Repository[*snapmatchai.BatchPrediction], logger *slog.Logger, genai snapmatchai.GenAIBatch, uploader snapmatchai.Uploader, jobBucket string) *JobWorker {
 	return &JobWorker{
-		jobChan:       make(chan *snapmatchai.BatchPrediction),
+		jobChan:       make(chan *JobData),
 		stopChan:      make(chan struct{}),
 		jobBucket:     jobBucket,
 		handlers:      make(map[string]ResultHandler),
@@ -54,7 +61,7 @@ func (w *JobWorker) Start(ctx context.Context) {
 	w.wg.Add(1)
 	go func() {
 		defer w.wg.Done()
-		activeJobs := make(map[string]*snapmatchai.BatchPrediction)
+		activeJobs := make(map[string]*JobData)
 
 		ticker := time.NewTicker(w.checkInterval)
 		defer ticker.Stop()
@@ -62,24 +69,23 @@ func (w *JobWorker) Start(ctx context.Context) {
 		for {
 			select {
 			case job := <-w.jobChan:
-				activeJobs[job.JobName] = job
-				fmt.Printf("Added job: %s\n", job.JobName)
-
+				activeJobs[job.batchPreds.JobName] = job
+				fmt.Printf("Added job: %s\n", job.batchPreds.JobName)
 			case <-ticker.C:
 				for jobName, job := range activeJobs {
-					genaiJob, err := w.genAi.GetBatchPredictionJob(ctx, job.InternalName)
+					jobCtx := middleware.SetSession(ctx, *job.session)
+					genaiJob, err := w.genAi.GetBatchPredictionJob(jobCtx, job.batchPreds.InternalName)
 					if err != nil {
 						w.logger.ErrorContext(ctx, fmt.Errorf("error: couldn't get updated job state: %w", err).Error())
 						continue
 					}
-					if genaiJob.Status == job.Status {
+					if genaiJob.Status == job.batchPreds.Status {
 						continue
 					}
-					success := w.handleJobStatusChange(ctx, job, genaiJob)
+					success := w.handleJobStatusChange(jobCtx, job.batchPreds, genaiJob)
 					if success {
 						delete(activeJobs, jobName)
 					}
-
 				}
 			case <-w.stopChan:
 				fmt.Println("Stopping worker...")
@@ -140,7 +146,7 @@ func (w *JobWorker) ReadResults(ctx context.Context, job *snapmatchai.BatchPredi
 		g.Go(func() error {
 			defer func() { <-sem }() // Release semaphore slot when done
 			if err := handler.HandleResult(gCtx, record); err != nil {
-				return fmt.Errorf("failed to handle result for record: %v, error: %w", record, err)
+				log.Println("error occurred while handling result", err)
 			}
 			return nil
 		})
@@ -158,9 +164,9 @@ func (w *JobWorker) ReadResults(ctx context.Context, job *snapmatchai.BatchPredi
 }
 
 // AddJob sends a new job to the worker for monitoring.
-func (w *JobWorker) AddJob(job *snapmatchai.BatchPrediction) {
+func (w *JobWorker) AddJob(job *snapmatchai.BatchPrediction, session *snapmatchai.Session) {
 	w.logger.InfoContext(context.Background(), "Adding job to worker", slog.String("job_name", job.JobName), slog.String("job_id", job.ID))
-	w.jobChan <- job
+	w.jobChan <- &JobData{batchPreds: job, session: session}
 }
 
 // Stop signals the worker to stop and waits for it to finish.

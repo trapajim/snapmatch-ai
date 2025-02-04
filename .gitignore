@@ -2,4 +2,5 @@
 .DS_STORE
 tmp/
 .env
+.envrc
 credentials.json

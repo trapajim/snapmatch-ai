@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"github.com/disintegration/imaging"
 	"github.com/trapajim/snapmatch-ai/pipeline"
+	"github.com/trapajim/snapmatch-ai/server/middleware"
 	"github.com/trapajim/snapmatch-ai/snapmatchai"
 	"io"
 	"log"
@@ -218,7 +219,7 @@ func (s *Service) BatchUpload(ctx context.Context, files chan BatchUploadRequest
 
 // Search searches for files in storage
 func (s *Service) Search(ctx context.Context, query string, similarity Similarity, page snapmatchai.Pagination) ([]snapmatchai.FileRecord, snapmatchai.Pagination, error) {
-	query, prms, err := buildQuery(s.appContext, query, similarity, page)
+	query, prms, err := buildQuery(ctx, s.appContext, query, similarity, page)
 	if err != nil {
 		return nil, snapmatchai.Pagination{}, err
 	}
@@ -245,9 +246,13 @@ func (s *Service) Search(ctx context.Context, query string, similarity Similarit
 }
 
 func (s *Service) List(ctx context.Context, page snapmatchai.Pagination) ([]snapmatchai.FileRecord, snapmatchai.Pagination, error) {
-	var where string
+	sess := middleware.GetSession(ctx)
+	if sess == nil {
+		return nil, snapmatchai.Pagination{}, errors.New("no session found")
+	}
+	where := fmt.Sprintf("WHERE STARTS_WITH(uri, 'gs://%s/%s/') ", s.appContext.Config.StorageBucket, sess.SessionID())
 	if page.NextToken != "" {
-		where += "WHERE updated > @updated"
+		where += " AND updated > @updated"
 	}
 	query := fmt.Sprintf(`
 SELECT *, 
@@ -277,7 +282,6 @@ LIMIT 50
 		if errors.As(err, &errAs) {
 			log.Println(errAs.Message)
 			log.Println(errAs.Unwrap().Error())
-
 		}
 		return nil, page, err
 	}
@@ -298,7 +302,9 @@ LIMIT 50
 }
 
 func (s *Service) SignURLs(ctx context.Context, records []snapmatchai.FileRecord) {
+	log.Println("signing urls")
 	for i := range records {
+		log.Println(records[i].URI)
 		signedUrl, err := s.appContext.Storage.SignUrl(ctx, records[i].ObjName, time.Hour)
 		if err != nil {
 			s.appContext.Logger.ErrorContext(ctx, "could not sign url", slog.String("error", err.Error()))
@@ -307,12 +313,16 @@ func (s *Service) SignURLs(ctx context.Context, records []snapmatchai.FileRecord
 		records[i].SignedURL = signedUrl
 	}
 }
-func buildQuery(appContext snapmatchai.Context, searchTerm string, similarity Similarity, page snapmatchai.Pagination) (string, map[string]any, error) {
+func buildQuery(ctx context.Context, appContext snapmatchai.Context, searchTerm string, similarity Similarity, page snapmatchai.Pagination) (string, map[string]any, error) {
 	table := fmt.Sprintf("%s_embeddings", appContext.Config.TableID)
 	parameters := make(map[string]any)
 	pageQuery := ""
 	if page.NextToken != "" {
 		pageQuery = fmt.Sprintf(" AND (distance > @last_distance OR (distance = @last_distance AND updated > @last_updated)) ")
+	}
+	session := middleware.GetSession(ctx)
+	if session == nil {
+		return "", nil, errors.New("no session found")
 	}
 	distance := getDistance(similarity)
 	query := fmt.Sprintf(`
@@ -322,6 +332,7 @@ WITH search_results AS (
     (
       SELECT *
       FROM %s.%s
+      WHERE STARTS_WITH(uri, 'gs://%s/%s/')
     ), 'ml_generate_embedding_result',
     (
       SELECT ml_generate_embedding_result, content AS query
@@ -340,7 +351,7 @@ WHERE distance <= best_distance * %f
 %s
 ORDER BY distance ASC, updated ASC
 LIMIT 50;
-`, appContext.Config.DatasetID, table, appContext.Config.BQMultiModalModel, searchTerm, distance, pageQuery)
+`, appContext.Config.DatasetID, table, appContext.Config.StorageBucket, session.SessionID(), appContext.Config.BQMultiModalModel, searchTerm, distance, pageQuery)
 	if page.NextToken != "" {
 		t, err := page.DecodeNextToken()
 		if err != nil {

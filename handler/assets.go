@@ -90,7 +90,7 @@ func (h *AssetsHandler) Get(w http.ResponseWriter, r *http.Request) {
 		}
 		return
 	}
-	err = pages.Assets(viewModel).Render(r.Context(), w)
+	err = pages.Assets(viewModel, GetSessionExpiry(r.Context())).Render(r.Context(), w)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return

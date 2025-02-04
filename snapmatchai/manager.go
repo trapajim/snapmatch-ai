@@ -2,7 +2,7 @@ package snapmatchai
 
 import (
 	"crypto/rand"
-	"encoding/base64"
+	"encoding/hex"
 	"fmt"
 	"io"
 	"log"
@@ -32,7 +32,7 @@ func (manager *Manager) sessionId() string {
 	if _, err := io.ReadFull(rand.Reader, b); err != nil {
 		return ""
 	}
-	return base64.URLEncoding.EncodeToString(b)
+	return hex.EncodeToString(b)
 }
 
 func (manager *Manager) SessionStart(w http.ResponseWriter, r *http.Request) Session {
@@ -42,6 +42,13 @@ func (manager *Manager) SessionStart(w http.ResponseWriter, r *http.Request) Ses
 	if err != nil || cookie.Value == "" {
 		sid := manager.sessionId()
 		session, _ := manager.provider.SessionInit(sid)
+		loc, err := time.LoadLocation("Asia/Tokyo")
+		timestamp := time.Now().Add(time.Duration(manager.maxlifetime) * time.Second).In(loc)
+
+		err = session.Set("expire", timestamp.Format("2006-01-02 03:04:05 PM"))
+		if err != nil {
+			log.Println(err)
+		}
 		c := http.Cookie{Name: manager.cookieName, Value: url.QueryEscape(sid), Path: "/", HttpOnly: true, MaxAge: int(manager.maxlifetime)}
 		http.SetCookie(w, &c)
 		return session

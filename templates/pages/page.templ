@@ -1,24 +1,25 @@
 package pages
+
 import "github.com/trapajim/snapmatch-ai/templates/partials"
 
-templ Page(title string) {
-  <html>
-    @partials.Head(title)
-    <body class="bg-gray-100 font-sans">
-      <div class="min-h-screen flex flex-col">
-        <!-- Navbar -->
-       @partials.Header(title)
-       @partials.Main() {
-        {children...}
-       }
-       <section id="toast-container" class="fixed right-7 bottom-7 z-50">
-       </section>
-       <footer class="bg-gray-800 text-white py-4 text-center">
-        <p class="text-sm">Dashboard © 2025</p>
-       </footer>
-      </div>
-    </body>
-    <script>
+templ Page(title string, expiry string) {
+	<html>
+		@partials.Head(title)
+		<body class="bg-gray-100 font-sans">
+		<div class="min-h-screen flex flex-col">
+				<!-- Navbar -->
+				@partials.Header(title)
+				@partials.Main() {
+					{ children... }
+				}
+				<section id="toast-container" class="fixed right-7 bottom-7 z-50"></section>
+				<footer class="bg-gray-800 text-white py-4 text-center flex justify-between items-center px-4">
+                  <p class="text-sm">SnapmatchAI © 2025</p>
+                  <p class="text-sm">Session expiration {expiry} (JST)</p>
+                </footer>
+			</div>
+		</body>
+		<script>
         class Toast {
             /**
              * A class representing a Toast notification.
@@ -122,5 +123,5 @@ templ Page(title string) {
         }
         document.body.addEventListener("makeToast", onMakeToast);
         </script>
-  </html>
+	</html>
 }

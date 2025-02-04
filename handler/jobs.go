@@ -25,7 +25,7 @@ func (h *JobsHandler) Get(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = pages.Jobs(jobsToViewModel(jobsList)).Render(r.Context(), w)
+	err = pages.Jobs(jobsToViewModel(jobsList), GetSessionExpiry(r.Context())).Render(r.Context(), w)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}

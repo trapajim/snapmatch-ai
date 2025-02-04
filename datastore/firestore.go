@@ -4,6 +4,7 @@ import (
 	"cloud.google.com/go/firestore"
 	"context"
 	"errors"
+	"github.com/trapajim/snapmatch-ai/server/middleware"
 	"github.com/trapajim/snapmatch-ai/services/ai"
 	"github.com/trapajim/snapmatch-ai/snapmatchai"
 	"google.golang.org/api/iterator"
@@ -23,16 +24,46 @@ func NewFirestoreRepository[T snapmatchai.Entity](client *firestore.Client, aiSe
 	}
 }
 
+func (r *FirestoreRepository[T]) getSessionCollection(ctx context.Context) (*firestore.CollectionRef, error) {
+	sess := middleware.GetSession(ctx)
+	if sess == nil {
+		return nil, errors.New("session cannot be empty")
+	}
+	return r.client.Collection(r.collection).Doc(sess.SessionID()).Collection("documents"), nil
+}
+
 func (r *FirestoreRepository[T]) Create(ctx context.Context, entity T) error {
-	doc := r.client.Collection(r.collection).NewDoc()
+	collection, err := r.getSessionCollection(ctx)
+	if err != nil {
+		return err
+	}
+
+	doc := collection.NewDoc()
 	entity.SetID(doc.ID)
-	_, err := doc.Set(ctx, entity)
+
+	_, err = doc.Set(ctx, entity)
+	if err != nil {
+		return nil
+	}
+	if indexable, ok := any(entity).(snapmatchai.IndexableEntity); ok {
+		sess := middleware.GetSession(ctx)
+		indexable.SetOwner(sess.SessionID())
+		_, err = r.client.Collection("search").NewDoc().Set(ctx, indexable)
+		if err != nil {
+			return err
+		}
+	}
 	return err
 }
 
 func (r *FirestoreRepository[T]) Read(ctx context.Context, id string) (T, error) {
 	var entity T
-	doc, err := r.client.Collection(r.collection).Doc(id).Get(ctx)
+	collection, err := r.getSessionCollection(ctx)
+	if err != nil {
+		return entity, err
+	}
+
+	doc, err := collection.Doc(id).Get(ctx)
 	if err != nil {
 		return entity, err
 	}
@@ -44,18 +75,33 @@ func (r *FirestoreRepository[T]) Read(ctx context.Context, id string) (T, error)
 }
 
 func (r *FirestoreRepository[T]) Update(ctx context.Context, entity T) error {
-	_, err := r.client.Collection(r.collection).Doc(entity.GetID()).Set(ctx, entity)
+	collection, err := r.getSessionCollection(ctx)
+	if err != nil {
+		return err
+	}
+
+	_, err = collection.Doc(entity.GetID()).Set(ctx, entity)
 	return err
 }
 
 func (r *FirestoreRepository[T]) Delete(ctx context.Context, id string) error {
-	_, err := r.client.Collection(r.collection).Doc(id).Delete(ctx)
+	collection, err := r.getSessionCollection(ctx)
+	if err != nil {
+		return err
+	}
+
+	_, err = collection.Doc(id).Delete(ctx)
 	return err
 }
 
 func (r *FirestoreRepository[T]) List(ctx context.Context, filters map[string]any) ([]T, error) {
 	var results []T
-	query := r.client.Collection(r.collection).Query
+	collection, err := r.getSessionCollection(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	query := collection.Query
 	for field, value := range filters {
 		query = query.Where(field, "==", value)
 	}
@@ -83,12 +129,16 @@ func (r *FirestoreRepository[T]) List(ctx context.Context, filters map[string]an
 
 func (r *FirestoreRepository[T]) Search(ctx context.Context, query string) ([]T, error) {
 	var results []T
-	collection := r.client.Collection(r.collection)
+	sess := middleware.GetSession(ctx)
+	if sess == nil {
+		return nil, errors.New("session cannot be empty")
+	}
 	emb, err := r.aiService.GenerateEmbeddings(ctx, query)
 	if err != nil {
 		return nil, err
 	}
-	vectorQuery := collection.FindNearest("VectorData", emb, 10, firestore.DistanceMeasureEuclidean, nil)
+
+	vectorQuery := r.client.Collection("search").Where("Owner", "==", sess.SessionID()).FindNearest("VectorData", emb, 10, firestore.DistanceMeasureEuclidean, nil)
 	iter := vectorQuery.Documents(ctx)
 	for {
 		doc, err := iter.Next()

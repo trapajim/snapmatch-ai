@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/trapajim/snapmatch-ai/jobworker"
+	"github.com/trapajim/snapmatch-ai/server/middleware"
 	"github.com/trapajim/snapmatch-ai/snapmatchai"
 	"log"
 	"log/slog"
@@ -28,6 +29,10 @@ func NewBatchPredictionService(appContext snapmatchai.Context, repo snapmatchai.
 }
 
 func (b *BatchPredictionService) Predict(ctx context.Context, builder PredictionBuilder) error {
+	session := middleware.GetSession(ctx)
+	if session == nil {
+		return snapmatchai.NewError(errors.New("session not found"), "session not found", 404)
+	}
 	reqs := builder.BuildPrediction()
 	var buffer bytes.Buffer
 	for _, req := range reqs {
@@ -44,8 +49,10 @@ func (b *BatchPredictionService) Predict(ctx context.Context, builder Prediction
 	if err != nil {
 		return fmt.Errorf("failed to write batch job: %w", err)
 	}
-	input := fmt.Sprintf("gs://%s/%s", b.appContext.Config.JobsStorageBucket, jobName+".json")
-	output := fmt.Sprintf("gs://%s/result.json", b.appContext.Config.JobsStorageBucket)
+	input := fmt.Sprintf("gs://%s/%s/%s", b.appContext.Config.JobsStorageBucket, session.SessionID(), jobName+".json")
+	output := fmt.Sprintf("gs://%s/%s/result", b.appContext.Config.JobsStorageBucket, session.SessionID())
+	log.Println("input", input)
+	log.Println("output", output)
 	job, err := b.createBatchPredictionJob(ctx, jobName, input, output)
 	if err != nil {
 		return snapmatchai.NewError(err, "failed to create batch prediction job", 500)
@@ -56,7 +63,7 @@ func (b *BatchPredictionService) Predict(ctx context.Context, builder Prediction
 		log.Println("failed to save batch prediction job", err)
 		return snapmatchai.NewError(err, "failed to save batch prediction job", 500)
 	}
-	b.worker.AddJob(&job)
+	b.worker.AddJob(&job, &session)
 	b.appContext.Logger.InfoContext(ctx, "Batch prediction job created", slog.String("job_id", job.ID), slog.String("job_name", job.JobName))
 	return nil
 }

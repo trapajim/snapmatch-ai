@@ -2,6 +2,8 @@ package handler
 
 import (
 	"encoding/csv"
+	"errors"
+	"fmt"
 	"github.com/trapajim/snapmatch-ai/server"
 	"github.com/trapajim/snapmatch-ai/services/ai"
 	"github.com/trapajim/snapmatch-ai/services/ai/predictions"
@@ -57,7 +59,7 @@ func (h *DataHandler) List(w http.ResponseWriter, r *http.Request) {
 		productsMap[i] = p.Data
 	}
 
-	if err := pages.Products(productsMap, headers).Render(r.Context(), w); err != nil {
+	if err := pages.Products(productsMap, headers, GetSessionExpiry(r.Context())).Render(r.Context(), w); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -105,7 +107,11 @@ func (h *DataHandler) Post(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Failed to read CSV header", http.StatusInternalServerError)
 		return
 	}
-
+	err = validateHeaders(headers)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
 	rows, err := reader.ReadAll()
 	if err != nil {
 		http.Error(w, "Failed to read CSV rows", http.StatusInternalServerError)
@@ -133,4 +139,33 @@ func (h *DataHandler) Post(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+}
+
+const (
+	FlagName        int8 = 1 << 0 // 00000001
+	FlagDescription int8 = 1 << 1 // 00000010
+)
+
+func validateHeaders(headers []string) error {
+	var flags int8
+	for _, h := range headers {
+		if h == "Name" {
+			flags |= FlagName
+		} else if h == "Description" {
+			flags |= FlagDescription
+		}
+	}
+
+	missing := make([]string, 0)
+	if flags&FlagName == 0 {
+		missing = append(missing, "Name")
+	}
+	if flags&FlagDescription == 0 {
+		missing = append(missing, "Description")
+	}
+
+	if len(missing) > 0 {
+		return errors.New("missing headers: " + fmt.Sprint(missing))
+	}
+	return nil
 }

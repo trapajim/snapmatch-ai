@@ -13,7 +13,7 @@ import (
 	"github.com/trapajim/snapmatch-ai/templates/partials"
 )
 
-func Dashboard(title string, jobsStats models.BarChart) templ.Component {
+func Dashboard(title string, jobsStats models.BarChart, expiry string) templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
 		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {
@@ -75,29 +75,13 @@ func Dashboard(title string, jobsStats models.BarChart) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 4, "\"></canvas></div><div class=\"flex flex-col gap-6 items-stretch\"><div class=\"flex-grow\">")
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-			templ_7745c5c3_Err = partials.StatsBox("Images Uploaded", "1200", "text-green-600").Render(ctx, templ_7745c5c3_Buffer)
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 5, "</div><div class=\"flex-grow\">")
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-			templ_7745c5c3_Err = partials.StatsBox("Rows Processed", "1200", "text-purple-600").Render(ctx, templ_7745c5c3_Buffer)
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 6, "</div></div></div><!-- Chart.js Script --> <script>\n\n\t\tconst el = document.getElementById('statsChart')\n        const ctx = el.getContext('2d');\n        const chartsData = JSON.parse(el.getAttribute('data-chart'));\n        const statsChart = new Chart(ctx, {\n          type: 'bar',\n          data: {\n            labels: chartsData.labels,\n            datasets: [{\n              data: chartsData.data,\n              backgroundColor: chartsData.colors,\n              borderWidth: 0\n            }]\n          },\n          options: {\n            plugins: {\n              legend: {\n                display: false\n              }\n            },\n            responsive: true,\n            scales: {\n              y: {\n                beginAtZero: true\n              }\n            }\n          }\n        });\n      </script>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 4, "\"></canvas></div></div><!-- Chart.js Script --> <script>\n\n\t\tconst el = document.getElementById('statsChart')\n        const ctx = el.getContext('2d');\n        const chartsData = JSON.parse(el.getAttribute('data-chart'));\n        const statsChart = new Chart(ctx, {\n          type: 'bar',\n          data: {\n            labels: chartsData.labels,\n            datasets: [{\n              data: chartsData.data,\n              backgroundColor: chartsData.colors,\n              borderWidth: 0\n            }]\n          },\n          options: {\n            plugins: {\n              legend: {\n                display: false\n              }\n            },\n            responsive: true,\n            scales: {\n              y: {\n                beginAtZero: true\n              }\n            }\n          }\n        });\n      </script>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			return nil
 		})
-		templ_7745c5c3_Err = Page(title).Render(templ.WithChildren(ctx, templ_7745c5c3_Var2), templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = Page(title, expiry).Render(templ.WithChildren(ctx, templ_7745c5c3_Var2), templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

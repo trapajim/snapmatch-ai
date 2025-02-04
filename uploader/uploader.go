@@ -5,9 +5,12 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/trapajim/snapmatch-ai/server/middleware"
 	"github.com/trapajim/snapmatch-ai/snapmatchai"
 	"google.golang.org/api/googleapi"
 	"io"
+	"log"
+	"strings"
 	"time"
 )
 
@@ -29,7 +32,7 @@ func (u *Uploader) WithBucket(bucket string) snapmatchai.Uploader {
 	}
 }
 func (u *Uploader) Upload(ctx context.Context, file io.Reader, object string) error {
-	wc := u.client.Bucket(u.defaultBucket).Object(object).NewWriter(ctx)
+	wc := u.client.Bucket(u.defaultBucket).Object(objectName(ctx, object)).NewWriter(ctx)
 	if _, err := io.Copy(wc, file); err != nil {
 		return handleApiError(err)
 	}
@@ -41,13 +44,12 @@ func (u *Uploader) Upload(ctx context.Context, file io.Reader, object string) er
 }
 
 func (u *Uploader) SignUrl(ctx context.Context, object string, expiry time.Duration) (string, error) {
-	u.client.Bucket(u.defaultBucket).Object(object)
 	opts := &storage.SignedURLOptions{
 		Scheme:  storage.SigningSchemeV4,
 		Method:  "GET",
 		Expires: time.Now().Add(expiry),
 	}
-	signedURL, err := u.client.Bucket(u.defaultBucket).SignedURL(object, opts)
+	signedURL, err := u.client.Bucket(u.defaultBucket).SignedURL(objectName(ctx, object), opts)
 	if err != nil {
 		return "", handleApiError(err)
 	}
@@ -55,7 +57,7 @@ func (u *Uploader) SignUrl(ctx context.Context, object string, expiry time.Durat
 }
 
 func (u *Uploader) GetFile(ctx context.Context, object string) (io.ReadCloser, error) {
-	rc, err := u.client.Bucket(u.defaultBucket).Object(object).NewReader(ctx)
+	rc, err := u.client.Bucket(u.defaultBucket).Object(objectName(ctx, object)).NewReader(ctx)
 	if err != nil {
 		return nil, handleApiError(err)
 	}
@@ -63,7 +65,7 @@ func (u *Uploader) GetFile(ctx context.Context, object string) (io.ReadCloser, e
 }
 
 func (u *Uploader) UpdateMetadata(ctx context.Context, object string, metadata map[string]string) error {
-	_, err := u.client.Bucket(u.defaultBucket).Object(object).Update(ctx, storage.ObjectAttrsToUpdate{
+	_, err := u.client.Bucket(u.defaultBucket).Object(objectName(ctx, object)).Update(ctx, storage.ObjectAttrsToUpdate{
 		Metadata: metadata,
 	})
 	if err != nil {
@@ -78,4 +80,19 @@ func handleApiError(err error) error {
 		return snapmatchai.NewError(err, fmt.Sprintf("Google API error: %s, Code: %d", e.Message, e.Code), e.Code)
 	}
 	return snapmatchai.NewError(err, "error occurred, during file handling", 500)
+}
+
+func objectName(ctx context.Context, object string) string {
+	sess := middleware.GetSession(ctx)
+	if sess == nil {
+		log.Println("session is nil")
+		return object
+	}
+	if strings.Contains(object, sess.SessionID()) {
+		log.Println("object already contains session id")
+		return object
+	}
+	log.Println("object does not contain session id")
+	log.Println(fmt.Sprintf("%s/%s", sess.SessionID(), object))
+	return fmt.Sprintf("%s/%s", sess.SessionID(), object)
 }

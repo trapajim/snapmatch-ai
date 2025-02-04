@@ -5,8 +5,8 @@ import (
 	"github.com/trapajim/snapmatch-ai/templates/partials"
 )
 
-templ Assets(assets models.Assets) {
-	@Page("Assets") {
+templ Assets(assets models.Assets, expiry string) {
+	@Page("Assets", expiry) {
 		<!-- drawer component -->
 		<div
 			id="drawer-example"

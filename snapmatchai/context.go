@@ -28,6 +28,10 @@ type Entity interface {
 	GetID() string
 	SetID(id string)
 }
+type IndexableEntity interface {
+	GetVectorData() firestore.Vector32
+	SetOwner(s string)
+}
 type Repository[T Entity] interface {
 	Create(ctx context.Context, entity T) error
 	Read(ctx context.Context, id string) (T, error)
